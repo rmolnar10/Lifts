@@ -5,6 +5,10 @@ import SetupNotice from "@/components/SetupNotice";
 
 export const metadata = { title: "Sign in — Lift Progression Tracker" };
 
+// Read the Supabase configuration at request time rather than baking a
+// prerendered copy of this page into the build output.
+export const dynamic = "force-dynamic";
+
 export default function LoginPage() {
   return (
     <div className="auth-wrap">
