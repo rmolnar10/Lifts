@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Lift Progression Tracker V4</title>
+<style>
+:root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#17202a;background:#f5f7fa}
+*{box-sizing:border-box}body{margin:0}.wrap{max-width:1100px;margin:auto;padding:12px 12px 90px}
+header{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+h1,h2,h3{margin:0 0 6px}.muted{color:#687384}.small{font-size:13px}
+.nav{display:flex;gap:7px;overflow:auto;margin-bottom:12px;position:sticky;top:0;background:#f5f7fa;padding:5px 0;z-index:5}
+button{border:0;border-radius:10px;padding:10px 13px;background:#e7ecf2;font-weight:700;cursor:pointer}.active,.primary{background:#17202a;color:#fff}.danger{background:#f5dcdc;color:#8b1d1d}
+.card{background:#fff;border:1px solid #dfe5ec;border-radius:14px;padding:15px;margin-bottom:12px;box-shadow:0 1px 2px #00000008}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.stat{background:#fff;border:1px solid #dfe5ec;border-radius:14px;padding:13px}.num{font-size:26px;font-weight:850}.label{font-size:12px;color:#687384}
+.target{padding:11px;border-radius:10px;background:#eef4f8;margin-top:10px}.good{background:#e6f5ea}.warn{background:#fff3d8}
+.exercise-head{display:flex;justify-content:space-between;gap:10px}.badge{font-size:12px;background:#eef2f6;padding:4px 8px;border-radius:99px}
+.sets{display:grid;grid-template-columns:repeat(auto-fit,minmax(85px,1fr));gap:8px;margin-top:10px}
+label{display:block;font-size:12px;color:#687384;margin-bottom:4px}input,select,textarea{width:100%;padding:9px;border:1px solid #cbd4de;border-radius:9px;font:inherit;background:#fff}textarea{min-height:80px;resize:vertical}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px;border-bottom:1px solid #e5e9ee;font-size:13px}
+.timer{font-size:34px;font-weight:850;text-align:center;padding:8px}.stickyBottom{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #dfe5ec;padding:10px;z-index:10}
+.pr{display:flex;justify-content:space-between;gap:8px;padding:9px 0;border-bottom:1px solid #e8ebef}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+@media(max-width:750px){.stats{grid-template-columns:1fr 1fr}header{align-items:flex-start;flex-direction:column}.wrap{padding:10px 10px 90px}}
+</style></head>
+<body><div class="wrap">
+<header><div><h1>Lift Progression Tracker</h1><div class="muted">V4 — fast logging, RIR, notes, editing</div></div><button class="danger" onclick="resetAll()">Reset data</button></header>
+<div class="nav" id="nav"></div><div id="app"></div>
+</div><div id="timerBar" class="stickyBottom" style="display:none"></div>
+
+<script>
+const PROGRAM={
+"Heavy Upper":[
+{id:"bench",name:"Bench Press",sets:4,min:5,max:8,type:"primary",unit:"lb",inc:5,reset:5,rest:180},
+{id:"wpull",name:"Weighted Pull-Up",sets:4,min:5,max:8,type:"primary",unit:"lb",inc:2.5,reset:5,rest:180},
+{id:"crowH",name:"Cable Row",sets:3,min:8,max:12,type:"isolation",unit:"lb",inc:5,reset:8,rest:120},
+{id:"shoulder",name:"DB Shoulder Press",sets:3,min:6,max:10,type:"primary",unit:"lb",inc:5,reset:6,rest:150},
+{id:"latH",name:"Lateral Raise",sets:3,min:12,max:20,type:"isolation",unit:"lb",inc:5,reset:12,rest:90},
+{id:"tri",name:"Triceps Pushdown",sets:3,min:10,max:15,type:"isolation",unit:"lb",inc:5,reset:10,rest:90},
+{id:"curl",name:"Curl",sets:3,min:8,max:12,type:"isolation",unit:"lb",inc:5,reset:8,rest:90}],
+"Volume Upper":[
+{id:"incline",name:"Incline DB Press",sets:4,min:8,max:12,type:"primary",unit:"lb",inc:5,reset:8,rest:150},
+{id:"pull",name:"Pull-Up",sets:3,min:6,max:10,type:"bodyweight",unit:"reps",inc:0,reset:6,rest:150},
+{id:"crowV",name:"Cable Row",sets:3,min:10,max:15,type:"isolation",unit:"lb",inc:5,reset:10,rest:120},
+{id:"latV",name:"Lateral Raise",sets:3,min:15,max:20,type:"isolation",unit:"lb",inc:5,reset:15,rest:90},
+{id:"hammer",name:"Hammer Curl",sets:3,min:8,max:12,type:"isolation",unit:"lb",inc:5,reset:8,rest:90},
+{id:"pushup",name:"Close-Grip Push-Ups",sets:2,min:0,max:0,type:"optional",unit:"reps",inc:0,reset:0,rest:90}],
+"Legs + Abs":[
+{id:"squat",name:"Squat",sets:3,min:5,max:8,type:"primary",unit:"lb",inc:5,reset:5,rest:180},
+{id:"rdl",name:"RDL",sets:3,min:8,max:12,type:"primary",unit:"lb",inc:5,reset:8,rest:150},
+{id:"legcurl",name:"Leg Curl",sets:3,min:10,max:15,type:"isolation",unit:"lb",inc:5,reset:10,rest:90},
+{id:"hlr",name:"Hanging Leg Raise",sets:3,min:8,max:15,type:"quality",unit:"reps",inc:0,reset:8,rest:90},
+{id:"sideplank",name:"Side Plank",sets:2,min:30,max:60,type:"timed",unit:"sec",inc:0,reset:30,rest:60},
+{id:"rk",name:"Reverse Kegel Practice",sets:1,min:120,max:180,type:"practice",unit:"sec",inc:0,reset:120,rest:0}]
+};
+
+const old=JSON.parse(localStorage.getItem("liftTrackerV4")||localStorage.getItem("liftTrackerV3")||localStorage.getItem("liftTrackerV2")||'{"starts":{},"workouts":[]}');
+let state={starts:old.starts||{},workouts:old.workouts||[]};
+let view="Dashboard",day=Object.keys(PROGRAM)[0],editingId=null,timer=null,timerEnd=0;
+const save=()=>localStorage.setItem("liftTrackerV4",JSON.stringify(state));
+const allEx=()=>Object.entries(PROGRAM).flatMap(([d,a])=>a.map(e=>({day:d,e})));
+const prev=(d,e)=>[...state.workouts].reverse().find(w=>w.day===d&&w.exercises[e.id])?.exercises[e.id]||null;
+function suggest(e){
+ let p=prev(day,e),start=state.starts[day+"::"+e.id];
+ if(e.type==="optional")return {t:"Optional — 2 sets near failure",f:"Record reps; no forced progression.",w:""};
+ if(e.type==="practice")return {t:"2–3 minutes of relaxed practice",f:"Quality only; do not strain.",w:""};
+ if(!p)return {t:start!==undefined&&start!==""?`${start} ${e.unit} × ${e.min}–${e.max}`:`Enter starting ${e.unit}`,f:"Establish a baseline. Aim for about 2–3 RIR.",w:start??""};
+ let r=p.reps.map(Number),top=r.length===e.sets&&r.every(x=>x>=e.max),low=r.indexOf(Math.min(...r));
+ if(e.type==="timed")return {t:top?"Progress the variation/load":`${e.min}–${e.max}s per set`,f:`Prioritize Set ${low+1}; add 5–10 sec if form is solid.`,w:""};
+ if(e.type==="quality")return {t:top?"15 / 15 / 15 controlled reps":`Build toward ${e.max} clean reps`,f:`Prioritize Set ${low+1}; no swinging.`,w:p.weight};
+ if(top){let nw=Number(p.weight)+e.inc;return {t:`${nw} ${e.unit} × ${e.reset}–${e.max}`,f:`All sets reached ${e.max}. Increase load.`,w:nw}}
+ let t=r.slice();t[low]=Math.min(e.max,t[low]+1);
+ return {t:`${p.weight} ${e.unit} × ${t.join(" / ")}`,f:`Prioritize Set ${low+1}; add one clean rep.`,w:p.weight};
+}
+function nav(){document.getElementById("nav").innerHTML=["Dashboard","Workout","History","Progress","PRs","Settings"].map(x=>`<button class="${view===x?'active':''}" onclick="view='${x}';render()">${x}</button>`).join("")}
+function render(){nav();({Dashboard,Workout,History,Progress,PRs,Settings}[view])()}
+function Dashboard(){
+ let vol=state.workouts.reduce((a,w)=>a+Object.values(w.exercises).reduce((s,x)=>s+(x.weight||0)*x.reps.reduce((q,r)=>q+r,0),0),0);
+ app.innerHTML=`<div class="stats"><div class="stat"><div class="num">${state.workouts.length}</div><div class="label">Workouts</div></div><div class="stat"><div class="num">${calcPRs().length}</div><div class="label">PR entries</div></div><div class="stat"><div class="num">${Math.round(vol).toLocaleString()}</div><div class="label">Logged load×reps</div></div><div class="stat"><div class="num">${state.workouts.length?new Date(state.workouts.at(-1).date).toLocaleDateString():"—"}</div><div class="label">Last workout</div></div></div>
+ <div class="card" style="margin-top:12px"><h2>Next workout</h2><div class="tabs">${Object.keys(PROGRAM).map(d=>`<button class="${day===d?'active':''}" onclick="day='${d}';view='Workout';render()">${d}</button>`).join("")}</div>${PROGRAM[day].map(e=>{let s=suggest(e);return `<div class="target"><b>${e.name}</b> — ${s.t}<br><span class="small">${s.f}</span></div>`}).join("")}<div class="actions"><button class="primary" onclick="view='Workout';render()">Start workout</button></div></div>
+ <div class="grid"><div class="card"><h3>Recent workouts</h3>${state.workouts.slice(-6).reverse().map(w=>`<div class="pr"><span>${w.day}</span><span class="muted">${new Date(w.date).toLocaleDateString()}</span></div>`).join("")||"<div class='muted'>No workouts yet.</div>"}</div><div class="card"><h3>Training focus</h3><p class="muted">${state.workouts.length?"Keep compounds controlled and close to failure without forcing ugly reps. The app will push the weakest set first.":"Enter starting weights and complete your first workout to establish baselines."}</p></div></div>`;
+}
+function Workout(){
+ let editing=editingId?state.workouts.find(w=>w.id===editingId):null;
+ app.innerHTML=`<div class="tabs">${Object.keys(PROGRAM).map(d=>`<button class="${d===day?'active':''}" onclick="day='${d}';editingId=null;render()">${d}</button>`).join("")}</div>
+ <div class="card"><div class="row"><div><h2>${editing?"Edit ":""}${day}</h2><div class="muted small">${editing?"Modify the saved workout and save changes.":"Log actual performance. RIR is optional but useful for calibrating progression."}</div></div>${!editing?`<button onclick="startRest(90)">Rest timer</button>`:""}</div></div>
+ ${PROGRAM[day].map((e,i)=>exerciseCard(e,i,editing)).join("")}
+ <div class="card"><label>Workout notes</label><textarea id="workoutNotes" placeholder="Sleep, energy, technique notes, anything worth remembering...">${editing?.notes||""}</textarea></div>
+ <div class="actions"><button class="primary" onclick="saveWorkout()">${editing?"Save changes":"Finish & save workout"}</button><button onclick="view='Dashboard';editingId=null;render()">Cancel</button></div>`;
+}
+function exerciseCard(e,i,editing){
+ let p=editing?.exercises[e.id]||(!editing?prev(day,e):null),s=suggest(e);
+ let weight=["optional","timed","practice","quality"].includes(e.type)?"":`<div><label>Weight (${e.unit})</label><input id="w${i}" type="number" step=".5" value="${p?.weight??s.w??""}"></div>`;
+ let sets="";
+ for(let j=0;j<e.sets;j++)sets+=`<div><label>Set ${j+1} reps${e.type==="timed"?" / sec":""}</label><input id="r${i}-${j}" type="number" min="0" value="${p?.reps?.[j]??""}"></div>`;
+ return `<div class="card"><div class="exercise-head"><div><h3>${i+1}. ${e.name}</h3><span class="badge">${e.sets} × ${e.min?e.min+"–"+e.max:"near failure"} ${e.unit}</span></div><button onclick="startRest(${e.rest})">Rest</button></div>${!editing?`<div class="target"><b>Next target:</b> ${s.t}<br><span class="small">${s.f}</span></div>`:""}<div class="grid" style="margin-top:10px">${weight}<div><label>RIR after final set</label><input id="rir${i}" type="number" min="0" max="5" step="1" value="${p?.rir??""}" placeholder="0–5"></div></div><div class="sets">${sets}</div></div>`;
+}
+function saveWorkout(){
+ let existing=editingId?state.workouts.find(w=>w.id===editingId):null,exs={};
+ PROGRAM[day].forEach((e,i)=>{let reps=[];for(let j=0;j<e.sets;j++)reps.push(Number(document.getElementById(`r${i}-${j}`).value||0));let wi=document.getElementById("w"+i),ri=document.getElementById("rir"+i);exs[e.id]={name:e.name,reps,weight:wi?Number(wi.value||0):0,unit:e.unit,rir:ri?.value===""?null:Number(ri.value)}});
+ if(existing){existing.exercises=exs;existing.notes=document.getElementById("workoutNotes").value}else state.workouts.push({id:Date.now(),day,date:new Date().toISOString(),exercises:exs,notes:document.getElementById("workoutNotes").value});
+ save();editingId=null;view="Dashboard";render();
+}
+function History(){
+ let rows=state.workouts.slice().reverse().map(w=>`<tr><td>${new Date(w.date).toLocaleString()}</td><td>${w.day}</td><td>${Object.keys(w.exercises).length}</td><td><button onclick="editWorkout(${w.id})">Edit</button> <button class="danger" onclick="deleteWorkout(${w.id})">Delete</button></td></tr>`).join("");
+ app.innerHTML=`<div class="card"><h2>Workout history</h2>${rows?`<table><tr><th>Date</th><th>Workout</th><th>Exercises</th><th>Actions</th></tr>${rows}</table>`:"<div class='muted'>No workouts yet.</div>"}</div>`;
+}
+function editWorkout(id){let w=state.workouts.find(x=>x.id===id);if(!w)return;editingId=id;day=w.day;view="Workout";render()}
+function deleteWorkout(id){if(confirm("Delete this workout? This cannot be undone.")){state.workouts=state.workouts.filter(w=>w.id!==id);save();render()}}
+function Progress(){
+ let opts=allEx().filter(({e})=>!["optional","practice","timed","quality"].includes(e.type)).map(({day,e})=>`<option value="${day}|${e.id}">${day} — ${e.name}</option>`).join("");
+ app.innerHTML=`<div class="card"><h2>Progress</h2><select id="ps" onchange="renderProgress()">${opts}</select><div id="pc" style="margin-top:12px"></div></div>`;renderProgress();
+}
+function renderProgress(){
+ let [d,id]=ps.value.split("|"),e=PROGRAM[d].find(x=>x.id===id),rows=state.workouts.filter(w=>w.day===d&&w.exercises[id]).slice(-12);
+ if(!rows.length){pc.innerHTML="<div class='muted'>No history yet.</div>";return}
+ let vals=rows.map(w=>w.exercises[id].weight||0),max=Math.max(...vals,1);
+ pc.innerHTML=`<div class="card"><h3>${e.name} — load trend</h3><div style="display:flex;align-items:flex-end;gap:5px;height:145px">${vals.map(v=>`<div style="flex:1"><div style="height:${Math.max(5,Math.round(v/max*120))}px;background:#17202a;border-radius:4px 4px 0 0"></div><div class="small" style="text-align:center">${v}</div></div>`).join("")}</div></div><table><tr><th>Date</th><th>Load</th><th>Sets</th><th>Est. 1RM</th></tr>${rows.slice().reverse().map(w=>{let x=w.exercises[id],best=Math.max(...x.reps),est=x.weight&&best?x.weight*(1+best/30):0;return `<tr><td>${new Date(w.date).toLocaleDateString()}</td><td>${x.weight||"—"} ${x.unit}</td><td>${x.reps.join(" / ")}</td><td>${est?Math.round(est):"—"}</td></tr>`}).join("")}</table>`;
+}
+function calcPRs(){
+ let result=[];allEx().forEach(({day,e})=>{let en=state.workouts.filter(w=>w.day===day&&w.exercises[e.id]);if(!en.length)return;let load=Math.max(...en.map(w=>w.exercises[e.id].weight||0)),rep=Math.max(...en.flatMap(w=>w.exercises[e.id].reps));if(load)result.push({name:e.name,day,type:"Load PR",value:load+" "+e.unit});result.push({name:e.name,day,type:"Rep PR",value:rep+" reps"});});return result;
+}
+function PRs(){let p=calcPRs();app.innerHTML=`<div class="card"><h2>Personal records</h2>${p.map(x=>`<div class="pr"><span><b>${x.name}</b><br><span class="muted small">${x.day} · ${x.type}</span></span><b>${x.value}</b></div>`).join("")||"<div class='muted'>Complete workouts to create PRs.</div>"}</div>`}
+function Settings(){
+ let rows=allEx().filter(({e})=>!["optional","timed","practice","quality"].includes(e.type));
+ app.innerHTML=`<div class="card"><h2>Starting weights</h2><p class="muted small">These are your initial loads. Changing them does not rewrite workout history.</p><div class="grid">${rows.map(({day,e})=>`<div><label>${day} — ${e.name} (${e.unit})</label><input data-s="${day}::${e.id}" type="number" step=".5" value="${state.starts[day+'::'+e.id]??''}"></div>`).join("")}</div><div class="actions"><button class="primary" onclick="saveStarts()">Save starting weights</button></div></div>
+ <div class="card"><h2>Data</h2><div class="actions"><button onclick="exportData()">Export backup</button><label style="display:inline-block"><input id="importFile" type="file" accept=".json" style="display:none" onchange="importData(event)"><button>Import backup</button></label></div><p class="muted small">Export a JSON backup before changing devices or browsers.</p></div>`;
+}
+function saveStarts(){document.querySelectorAll("[data-s]").forEach(x=>state.starts[x.dataset.s]=x.value===""?"":Number(x.value));save();render()}
+function exportData(){let blob=new Blob([JSON.stringify({version:4,...state},null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="lift-tracker-backup.json";a.click();URL.revokeObjectURL(a.href)}
+function importData(ev){let f=ev.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!x.workouts||!x.starts)throw 0;state={starts:x.starts,workouts:x.workouts};save();render();alert("Backup imported.")}catch{alert("That file is not a valid lift tracker backup.")}};r.readAsText(f)}
+function startRest(sec){if(!sec)return;clearInterval(timer);timerEnd=Date.now()+sec*1000;updateTimer();timer=setInterval(updateTimer,250)}
+function updateTimer(){let left=Math.max(0,timerEnd-Date.now()),s=Math.ceil(left/1000);if(!left){clearInterval(timer);timer=null;timerBar.style.display="block";timerBar.innerHTML='<div class="timer">Rest complete ✓ <button onclick="timerBar.style.display=\'none\'">Dismiss</button></div>';return}let m=Math.floor(s/60),ss=String(s%60).padStart(2,"0");timerBar.style.display="block";timerBar.innerHTML=`<div class="timer">${m}:${ss} <button onclick="clearInterval(timer);timerBar.style.display='none'">Stop</button></div>`}
+function resetAll(){if(confirm("Delete all workout data and starting weights?")){state={starts:{},workouts:[]};save();view="Dashboard";render()}}
+render();
+</script></body></html>
