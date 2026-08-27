@@ -50,3 +50,46 @@ Only after V5 is stable in real use. Do not start before QA is done.
 - [ ] Exercise-specific load jumps
 - [ ] Better post-load reset targets
 - [ ] More coach-like recommendations
+
+---
+
+## Beyond V6 — the longer arc
+
+Direction, not commitments. Each stage only makes sense once the one before it
+is genuinely in daily use.
+
+### V7 — Whole-day inputs
+Lifting is one input into body composition; on its own it explains little.
+
+- [ ] Daily bodyweight (also unblocks pull-up load maths and stall diagnosis)
+- [ ] Daily macros — protein first, since it is the one that moves the outcome
+- [ ] Cardio sessions (the Zone 2 walks and step count currently kept outside the app)
+- [ ] A single trend view: load, bodyweight and intake on one timeline
+
+The payoff is diagnostic. Today a stall looks identical whether it is fatigue,
+under-eating, or poor sleep — and V6 will guess wrong. With intake and
+bodyweight in the same database, the engine can say "your loads stalled while
+bodyweight fell for three weeks" instead of quietly reducing your weights.
+
+### V8 — Goal-aware coaching
+The engine stops assuming the goal is always hypertrophy-first.
+
+- [ ] Explicit goal setting (gain muscle / get stronger / lean out / maintain)
+- [ ] Targets derived from the goal — intake, rate of weight change, load bias
+- [ ] Recommendations that reconcile training and nutrition rather than treating
+      them as separate apps that happen to share a login
+
+### V9 — Beyond one user
+Everything up to here is purpose-built around one person's program. Generalising
+is a genuinely different product, not a bigger version of this one.
+
+- [ ] Programs as data rather than a TypeScript constant (starts in V6 if
+      set-count progression lands)
+- [ ] Onboarding: goals, experience, available equipment, days per week
+- [ ] Generated programs, with the progression engine driving them
+- [ ] Multi-user concerns the current design defers: sharing, coaching, exports
+
+**The honest risk:** each stage adds daily logging burden, and adherence is the
+thing that actually decides whether any of it works. A workout tracker you use
+every session beats a health platform you abandon in three weeks. Add an input
+only when the previous one has survived a month of real use.
