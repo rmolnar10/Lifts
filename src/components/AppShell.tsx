@@ -118,6 +118,7 @@ export default function AppShell({ userEmail }: { userEmail: string }) {
                 {...shared}
                 editingId={editingId}
                 setEditingId={setEditingId}
+                account={userEmail}
                 onDone={() => {
                   setEditingId(null);
                   setView("Dashboard");

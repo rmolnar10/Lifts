@@ -1,5 +1,13 @@
 # Changelog
 
+## Post-V5 fixes
+- In-progress workouts are no longer lost when switching tabs. Entries are
+  mirrored to this device's storage on every keystroke and restored when you
+  come back, with a "Start fresh" escape hatch. Drafts are per account, per day,
+  and separate from editing a saved workout; they expire after 7 days and are
+  discarded if the program changes underneath them.
+- Cancel now confirms before throwing away an in-progress workout.
+
 ## V5 — Cloud
 - Supabase Auth: sign up, sign in, sign out, sessions that survive reloads
 - Supabase PostgreSQL with Row Level Security on every user-owned table

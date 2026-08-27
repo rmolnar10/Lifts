@@ -1,16 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { DAYS, PROGRAM, UNWEIGHTED_TYPES, type Exercise } from "@/lib/program";
 import { previousPerformance, suggest } from "@/lib/progression";
 import { saveWorkout, type ExercisePayload } from "@/lib/data";
 import type { SharedViewProps } from "@/components/AppShell";
 import type { LoggedExercise } from "@/lib/types";
+import {
+  clearDraft,
+  describeAge,
+  readDraft,
+  writeDraft,
+  type WorkoutDraft,
+} from "@/lib/draft";
 
 interface Props extends SharedViewProps {
   editingId: string | null;
   setEditingId: (id: string | null) => void;
   onDone: () => void;
+  /** Scopes drafts to the signed-in account. */
+  account: string;
 }
 
 /** One exercise's inputs. Values are kept as strings so blank stays blank. */
@@ -49,9 +58,14 @@ export default function WorkoutView({
   editingId,
   setEditingId,
   onDone,
+  account,
 }: Props) {
   const { workouts, starts } = state;
   const editing = editingId ? (workouts.find((w) => w.id === editingId) ?? null) : null;
+
+  // A draft from a previous visit to this screen wins over the computed
+  // defaults — that is the whole point of it.
+  const [restored] = useState<WorkoutDraft | null>(() => readDraft(account, day, editingId));
 
   const [forms, setForms] = useState<Record<string, ExerciseForm>>(() => {
     const initial: Record<string, ExerciseForm> = {};
@@ -62,19 +76,46 @@ export default function WorkoutView({
         ? (editing.exercises[exercise.id] ?? null)
         : previousPerformance(workouts, day, exercise.id);
       const suggestion = suggest(exercise, day, workouts, starts);
-      initial[exercise.id] = initialForm(exercise, previous, suggestion.weight);
+      initial[exercise.id] =
+        restored?.forms[exercise.id] ?? initialForm(exercise, previous, suggestion.weight);
     }
     return initial;
   });
 
-  const [notes, setNotes] = useState(editing?.notes ?? "");
+  const [notes, setNotes] = useState(restored?.notes ?? editing?.notes ?? "");
   const [saving, setSaving] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(restored !== null);
+
+  // Only mirror to storage once the user has actually typed something, so
+  // merely opening the tab never creates a draft.
+  const dirty = useRef(false);
+  const markDirty = useCallback(() => {
+    dirty.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (!dirty.current) return;
+    writeDraft(account, editingId, {
+      savedAt: new Date().toISOString(),
+      day,
+      forms,
+      notes,
+    });
+  }, [account, day, editingId, forms, notes]);
+
+  const discardDraft = useCallback(() => {
+    dirty.current = false;
+    clearDraft(account, day, editingId);
+    setDraftRestored(false);
+  }, [account, day, editingId]);
 
   function update(exerciseId: string, patch: Partial<ExerciseForm>) {
+    markDirty();
     setForms((current) => ({ ...current, [exerciseId]: { ...current[exerciseId], ...patch } }));
   }
 
   function updateRep(exerciseId: string, index: number, value: string) {
+    markDirty();
     setForms((current) => {
       const reps = current[exerciseId].reps.slice();
       reps[index] = value;
@@ -107,6 +148,7 @@ export default function WorkoutView({
         notes,
         exercises,
       });
+      discardDraft();
       await refresh();
       onDone();
     } catch (e) {
@@ -115,6 +157,15 @@ export default function WorkoutView({
       );
       setSaving(false);
     }
+  }
+
+  function onCancel() {
+    // Cancel throws away an in-progress workout, so make sure it was meant.
+    if (dirty.current || draftRestored) {
+      if (!window.confirm("Discard this in-progress workout? Your entries will be lost.")) return;
+    }
+    discardDraft();
+    onDone();
   }
 
   return (
@@ -133,6 +184,16 @@ export default function WorkoutView({
           </button>
         ))}
       </div>
+
+      {draftRestored && restored ? (
+        <div className="notice">
+          Picked up where you left off — entries saved {describeAge(restored.savedAt)} on this
+          device.{" "}
+          <button className="link-button" onClick={discardDraft}>
+            Start fresh
+          </button>
+        </div>
+      ) : null}
 
       <div className="card">
         <div className="row">
@@ -243,7 +304,7 @@ export default function WorkoutView({
         <button className="primary" onClick={onSave} disabled={saving}>
           {saving ? "Saving…" : editing ? "Save changes" : "Finish & save workout"}
         </button>
-        <button onClick={onDone} disabled={saving}>
+        <button onClick={onCancel} disabled={saving}>
           Cancel
         </button>
       </div>

@@ -4,7 +4,9 @@
  */
 
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
+import { writeDraft, type WorkoutDraft } from "@/lib/draft";
+import { PROGRAM } from "@/lib/program";
 import Dashboard from "@/components/views/Dashboard";
 import WorkoutView from "@/components/views/WorkoutView";
 import HistoryView from "@/components/views/HistoryView";
@@ -53,6 +55,26 @@ const shared = {
   setError: () => undefined,
 };
 
+/** In-memory localStorage so draft restore can be exercised in a render test. */
+function installStorage() {
+  const data = new Map<string, string>();
+  Object.defineProperty(globalThis, "window", {
+    value: {
+      localStorage: {
+        getItem: (k: string) => data.get(k) ?? null,
+        setItem: (k: string, v: string) => void data.set(k, v),
+        removeItem: (k: string) => void data.delete(k),
+      },
+    },
+    configurable: true,
+    writable: true,
+  });
+}
+
+afterEach(() => {
+  Reflect.deleteProperty(globalThis, "window");
+});
+
 describe("view rendering", () => {
   it("dashboard shows stats and the next target for every exercise", () => {
     const html = renderToStaticMarkup(<Dashboard {...shared} onStartWorkout={() => undefined} />);
@@ -66,7 +88,7 @@ describe("view rendering", () => {
 
   it("workout view renders an input for every set of every exercise", () => {
     const html = renderToStaticMarkup(
-      <WorkoutView {...shared} editingId={null} setEditingId={() => undefined} onDone={() => undefined} />,
+      <WorkoutView {...shared} editingId={null} setEditingId={() => undefined} onDone={() => undefined} account="test@example.com" />,
     );
     expect(html).toContain("Bench Press");
     expect(html).toContain('id="r-bench-3"'); // 4 sets, zero-indexed
@@ -79,7 +101,7 @@ describe("view rendering", () => {
 
   it("workout view in edit mode loads the saved values and hides next targets", () => {
     const html = renderToStaticMarkup(
-      <WorkoutView {...shared} editingId="w1" setEditingId={() => undefined} onDone={() => undefined} />,
+      <WorkoutView {...shared} editingId="w1" setEditingId={() => undefined} onDone={() => undefined} account="test@example.com" />,
     );
     expect(html).toContain("Save changes");
     expect(html).toContain("good session");
@@ -123,6 +145,57 @@ describe("view rendering", () => {
     expect(html).not.toContain("Reverse Kegel Practice");
   });
 
+  it("restores an in-progress workout from a saved draft", () => {
+    installStorage();
+
+    const forms: WorkoutDraft["forms"] = {};
+    for (const exercise of PROGRAM[HEAVY]) {
+      forms[exercise.id] = {
+        weight: "225",
+        rir: "1",
+        reps: Array.from({ length: exercise.sets }, () => "11"),
+      };
+    }
+    writeDraft("test@example.com", null, {
+      savedAt: new Date().toISOString(),
+      day: HEAVY,
+      forms,
+      notes: "half way through",
+    });
+
+    const html = renderToStaticMarkup(
+      <WorkoutView
+        {...shared}
+        editingId={null}
+        setEditingId={() => undefined}
+        onDone={() => undefined}
+        account="test@example.com"
+      />,
+    );
+
+    // Draft values win over the computed defaults.
+    expect(html).toContain('value="225"');
+    expect(html).toContain('value="11"');
+    expect(html).toContain("half way through");
+    expect(html).toContain("Picked up where you left off");
+    expect(html).toContain("Start fresh");
+  });
+
+  it("shows no restore banner when there is no draft", () => {
+    installStorage();
+    const html = renderToStaticMarkup(
+      <WorkoutView
+        {...shared}
+        editingId={null}
+        setEditingId={() => undefined}
+        onDone={() => undefined}
+        account="test@example.com"
+      />,
+    );
+    expect(html).not.toContain("Picked up where you left off");
+    expect(html).toContain('value="140"'); // last session's bench load
+  });
+
   it("renders every view with no data at all", () => {
     const empty: AppState = { starts: {}, workouts: [] };
     const base = { ...shared, state: empty };
@@ -138,7 +211,7 @@ describe("view rendering", () => {
     );
     expect(
       renderToStaticMarkup(
-        <WorkoutView {...base} editingId={null} setEditingId={() => undefined} onDone={() => undefined} />,
+        <WorkoutView {...base} editingId={null} setEditingId={() => undefined} onDone={() => undefined} account="test@example.com" />,
       ),
     ).toContain("Enter starting lb");
   });
