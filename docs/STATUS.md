@@ -38,8 +38,8 @@ All green as of the last commit.
 ## Deployment shape
 
 - **Repo:** `rmolnar10/Lifts` (public)
-- **Branches:** `main` and `claude/lifts-v5-supabase-vercel-3iwa63` are kept at the
-  same commit. See *Outstanding* — this is a workaround, not the intended end state.
+- **Branch:** `main` only. It is GitHub's default branch and Vercel's production
+  branch; every push to it deploys to production. Work directly on `main`.
 - **Vercel:** project imported from GitHub, auto-deploys on push. Env vars
   `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set on
   Production and Preview.
@@ -52,9 +52,11 @@ All green as of the last commit.
 
 ## Outstanding
 
-1. **Duplicate branch.** `main` is now the default branch and Vercel's
-   production branch. `claude/lifts-v5-supabase-vercel-3iwa63` is kept in sync
-   only because it is this session's designated branch; it can be deleted.
+1. **Delete the stale `claude/lifts-v5-supabase-vercel-3iwa63` remote branch.**
+   It holds nothing `main` does not. The session's GitHub proxy only allows
+   pushes to the current working branch, so `git push --delete` is refused and a
+   session cannot remove it — do it from the repo's Branches page on GitHub.
+   Until then it produces a duplicate preview build on every push.
 2. **Runtime config hardening.** Read Supabase config server-side at request
    time and pass it to the client, so a wrong env var can't produce the
    "Supabase is not configured" card without a rebuild.
