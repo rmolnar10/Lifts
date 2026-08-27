@@ -1,6 +1,12 @@
 # Changelog
 
 ## Post-V5 fixes
+- Automated end-to-end QA: `npm run qa` drives a real Chromium through the app
+  at phone and desktop viewports, against a throwaway Postgres running the real
+  migrations and RLS policies. 30 checks.
+- Fixed: "Start fresh" cleared the saved draft but left the typed values in the
+  form, so the inputs still showed the discarded workout. Found by the new QA
+  suite on its first run.
 - In-progress workouts are no longer lost when switching tabs. Entries are
   mirrored to this device's storage on every keystroke and restored when you
   come back, with a "Start fresh" escape hatch. Drafts are per account, per day,

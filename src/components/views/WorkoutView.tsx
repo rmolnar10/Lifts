@@ -67,19 +67,28 @@ export default function WorkoutView({
   // defaults — that is the whole point of it.
   const [restored] = useState<WorkoutDraft | null>(() => readDraft(account, day, editingId));
 
-  const [forms, setForms] = useState<Record<string, ExerciseForm>>(() => {
-    const initial: Record<string, ExerciseForm> = {};
+  /**
+   * The inputs as they look with no draft: last session's performance when
+   * logging a new workout (exactly as in V4), or the saved values when editing.
+   */
+  const computeDefaults = useCallback((): Record<string, ExerciseForm> => {
+    const defaults: Record<string, ExerciseForm> = {};
     for (const exercise of PROGRAM[day]) {
-      // When logging a new workout the inputs are pre-filled with last time's
-      // performance, exactly as in V4; when editing, with the saved values.
       const previous = editing
         ? (editing.exercises[exercise.id] ?? null)
         : previousPerformance(workouts, day, exercise.id);
       const suggestion = suggest(exercise, day, workouts, starts);
-      initial[exercise.id] =
-        restored?.forms[exercise.id] ?? initialForm(exercise, previous, suggestion.weight);
+      defaults[exercise.id] = initialForm(exercise, previous, suggestion.weight);
     }
-    return initial;
+    return defaults;
+  }, [day, editing, workouts, starts]);
+
+  const [forms, setForms] = useState<Record<string, ExerciseForm>>(() => {
+    const defaults = computeDefaults();
+    if (!restored) return defaults;
+    return Object.fromEntries(
+      Object.entries(defaults).map(([id, value]) => [id, restored.forms[id] ?? value]),
+    );
   });
 
   const [notes, setNotes] = useState(restored?.notes ?? editing?.notes ?? "");
@@ -103,11 +112,20 @@ export default function WorkoutView({
     });
   }, [account, day, editingId, forms, notes]);
 
-  const discardDraft = useCallback(() => {
-    dirty.current = false;
-    clearDraft(account, day, editingId);
-    setDraftRestored(false);
-  }, [account, day, editingId]);
+  /** Drops the stored draft. `reset` also puts the visible inputs back to their
+   *  defaults, which is what "Start fresh" means to someone looking at them. */
+  const discardDraft = useCallback(
+    (reset = false) => {
+      dirty.current = false;
+      clearDraft(account, day, editingId);
+      setDraftRestored(false);
+      if (reset) {
+        setForms(computeDefaults());
+        setNotes(editing?.notes ?? "");
+      }
+    },
+    [account, day, editingId, computeDefaults, editing],
+  );
 
   function update(exerciseId: string, patch: Partial<ExerciseForm>) {
     markDirty();
@@ -189,7 +207,7 @@ export default function WorkoutView({
         <div className="notice">
           Picked up where you left off — entries saved {describeAge(restored.savedAt)} on this
           device.{" "}
-          <button className="link-button" onClick={discardDraft}>
+          <button className="link-button" onClick={() => discardDraft(true)}>
             Start fresh
           </button>
         </div>

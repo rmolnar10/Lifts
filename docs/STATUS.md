@@ -23,12 +23,15 @@ Supabase, and the first workouts have been logged through it.
 ## Verification
 
 ```bash
-npm test              # 58 tests: progression, V4 parity, backup, drafts, view rendering
-npm run typecheck
-npm run lint
-npm run build
-./scripts/test-db.sh  # 13 checks: migrations, RLS isolation, cascades, anon lockout
+npm test        # 58 unit tests: progression, V4 parity, backup, drafts, view rendering
+npm run qa      # 30 end-to-end checks in a real browser, mobile + desktop
+npm run test:db # 13 checks: migrations, RLS isolation, cascades, anon lockout
+npm run typecheck && npm run lint && npm run build
 ```
+
+`npm run qa` stands up a throwaway Postgres with the real migrations, a Supabase
+stub in front of it, and the app, then drives Chromium through the checklist.
+See `.claude/skills/qa/SKILL.md`.
 
 All green as of the last commit.
 
@@ -49,40 +52,35 @@ All green as of the last commit.
 
 ## Outstanding
 
-1. **Branch cleanup.** GitHub's default branch and Vercel's Production Branch
-   both still point at `claude/lifts-v5-supabase-vercel-3iwa63`. Once both are
-   switched to `main`, a push to `main` triggers the first real production
-   deploy, and the duplicate branch can go.
-2. **QA skill.** Build `.claude/skills/qa/SKILL.md` driving Playwright
-   (Chromium is preinstalled at `/opt/pw-browsers`) through
-   `docs/QA_CHECKLIST.md`. Tier 1 runs against the app locally with a stubbed
-   Supabase over the real local Postgres; Tier 2 runs against the live site and
-   needs `*.vercel.app` in the environment's allowed domains.
-3. **Runtime config hardening.** Read Supabase config server-side at request
+1. **Duplicate branch.** `main` is now the default branch and Vercel's
+   production branch. `claude/lifts-v5-supabase-vercel-3iwa63` is kept in sync
+   only because it is this session's designated branch; it can be deleted.
+2. **Runtime config hardening.** Read Supabase config server-side at request
    time and pass it to the client, so a wrong env var can't produce the
    "Supabase is not configured" card without a rebuild.
-4. **Remaining QA checklist.** `docs/QA_CHECKLIST.md` — cross-device sync and
+3. **Remaining QA checklist.** `docs/QA_CHECKLIST.md` — cross-device sync and
    the mobile passes are the parts automation won't fully cover.
 
 ## Session capabilities
 
 This matters for planning what Claude can do unaided.
 
-**Blocked by the cloud environment's default network policy** (403 at the egress
-proxy): `api.vercel.com`, `api.supabase.com`, `*.vercel.app`. Claude cannot
-deploy, run migrations remotely, or load the live site unless the environment's
-network access is set to **Custom** with those hosts allowed.
+**Connectors installed:** the official **Supabase** and **Vercel** MCP
+connectors are connected. Connector traffic routes through Anthropic's servers
+rather than the session's network, so they work regardless of the egress policy.
+Supabase exposes `execute_sql`, `apply_migration`, `list_tables`, `get_advisors`;
+Vercel exposes deployments, build logs and runtime errors.
 
-**Not blocked:** GitHub, npm, `raw.githubusercontent.com`. Claude can commit and
-push, which is what drives deploys.
+**Network access** is set to Custom with `*.vercel.app` and `*.supabase.co`
+allowed, so the live site is reachable from a session. `api.vercel.com` and
+`api.supabase.com` remain blocked — the connectors cover those.
 
-**MCP connectors bypass the network policy entirely** — connector traffic goes
-through Anthropic's servers, not the session's network. Installing the official
-**Supabase** and **Vercel** connectors gives Claude project and deployment
-access without any network change.
+**Preinstalled:** Node 22, PostgreSQL 16, Chromium + Playwright. Docker is *not*
+available.
 
-**Preinstalled and usable now:** Node 22, PostgreSQL 16 (used by
-`scripts/test-db.sh`), Chromium + Playwright. Docker is *not* available.
+**Live URLs:** `lifts-ten.vercel.app` is public. `lifts-rmolnar11.vercel.app`
+and `lifts-git-main-rmolnar11.vercel.app` sit behind Vercel SSO
+(`ssoProtection: all_except_custom_domains`).
 
 ## Ground rules
 

@@ -14,19 +14,21 @@
 - [x] Vercel deployment (see docs/DEPLOYMENT.md)
 - [x] Local QA (40 app tests, 13 database tests, typecheck, lint, build)
 
-## QA — next up
-Real-world testing on a phone and a computer. See docs/QA_CHECKLIST.md.
+## QA — in progress
+`npm run qa` automates the browser-testable parts (30 checks, mobile + desktop).
+The rest needs a human on a real device. See docs/QA_CHECKLIST.md.
 
-- [ ] Authentication
-- [ ] Workout entry
-- [ ] Progression
-- [ ] Edit/delete
-- [ ] Dashboard
-- [ ] PRs
-- [ ] Charts
-- [ ] Sync
-- [ ] Mobile
-- [ ] Backup/import
+- [x] Authentication (automated)
+- [x] Workout entry (automated)
+- [x] Progression (automated)
+- [x] Edit/delete (automated)
+- [x] Dashboard, PRs, charts (automated)
+- [x] User isolation (automated)
+- [ ] Real Safari on the actual phone
+- [ ] Cross-device sync
+- [ ] Feel: keyboard, scrolling, speed between sets
+
+- [ ] Backup/import round trip on the real project
 
 ## Post-V5 — small improvements
 Candidates already identified, none implemented yet (see docs/V5_NOTES.md):
