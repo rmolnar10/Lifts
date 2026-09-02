@@ -86,7 +86,12 @@ and `lifts-git-main-rmolnar11.vercel.app` sit behind Vercel SSO
 
 ## Ground rules
 
-- Don't redesign the progression algorithm. That is V6, and only after QA.
+- The V6 engine (RIR-aware, trend-aware) is designed but NOT built. See the
+  research doc; `docs/TODO.md` lists the four answers that unblock it.
+- The program is now ours to tune. `tests/v4-parity.test.ts` pins the *engine*
+  to V4's behaviour using V4's own exercise definitions, and separately asserts
+  the program differs from V4 only where `INTENTIONAL_PROGRAM_CHANGES` says.
+  Add an entry there when you change the program on purpose.
 - Don't add rear delt fly. Don't add cardio tracking unless asked.
 - V4 behaviour is the baseline; `tests/v4-parity.test.ts` enforces it.
 - Never put a Supabase `service_role` key in this repo or in Vercel.

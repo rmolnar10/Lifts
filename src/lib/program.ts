@@ -45,12 +45,12 @@ export const PROGRAM: Program = {
     { id: "curl", name: "Curl", sets: 3, min: 8, max: 12, type: "isolation", unit: "lb", inc: 5, reset: 8, rest: 90 },
   ],
   "Volume Upper": [
-    { id: "incline", name: "Incline DB Press", sets: 4, min: 8, max: 12, type: "primary", unit: "lb", inc: 5, reset: 8, rest: 150 },
-    { id: "pull", name: "Pull-Up", sets: 3, min: 6, max: 10, type: "bodyweight", unit: "reps", inc: 0, reset: 6, rest: 150 },
+    { id: "incline", name: "Incline DB Press", sets: 5, min: 6, max: 10, type: "primary", unit: "lb", inc: 5, reset: 6, rest: 150 },
+    { id: "pull", name: "Pull-Up", sets: 3, min: 6, max: 10, type: "bodyweight", unit: "lb", inc: 2.5, reset: 6, rest: 150 },
     { id: "crowV", name: "Cable Row", sets: 3, min: 10, max: 15, type: "isolation", unit: "lb", inc: 5, reset: 10, rest: 120 },
     { id: "latV", name: "Lateral Raise", sets: 3, min: 15, max: 20, type: "isolation", unit: "lb", inc: 5, reset: 15, rest: 90 },
     { id: "hammer", name: "Hammer Curl", sets: 3, min: 8, max: 12, type: "isolation", unit: "lb", inc: 5, reset: 8, rest: 90 },
-    { id: "pushup", name: "Close-Grip Push-Ups", sets: 2, min: 0, max: 0, type: "optional", unit: "reps", inc: 0, reset: 0, rest: 90 },
+    { id: "ohtri", name: "Overhead Triceps Extension", sets: 3, min: 10, max: 15, type: "isolation", unit: "lb", inc: 5, reset: 10, rest: 90 },
   ],
   "Legs + Abs": [
     { id: "squat", name: "Squat", sets: 3, min: 5, max: 8, type: "primary", unit: "lb", inc: 5, reset: 5, rest: 180 },

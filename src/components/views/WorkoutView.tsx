@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { DAYS, PROGRAM, UNWEIGHTED_TYPES, type Exercise } from "@/lib/program";
 import { previousPerformance, suggest } from "@/lib/progression";
 import { saveWorkout, type ExercisePayload } from "@/lib/data";
+import { retiredExercisePayloads } from "@/lib/retired";
 import type { SharedViewProps } from "@/components/AppShell";
 import type { LoggedExercise } from "@/lib/types";
 import {
@@ -158,6 +159,9 @@ export default function WorkoutView({
       };
     });
 
+    // Carry through anything logged under an earlier version of the program.
+    exercises.push(...retiredExercisePayloads(day, editing));
+
     try {
       await saveWorkout({
         workoutId: editingId,
@@ -243,7 +247,7 @@ export default function WorkoutView({
                 <span className="badge">
                   {exercise.sets} ×{" "}
                   {exercise.min ? `${exercise.min}–${exercise.max}` : "near failure"}{" "}
-                  {exercise.unit}
+                  {exercise.type === "timed" ? "sec" : "reps"}
                 </span>
               </div>
               <button onClick={() => startRest(exercise.rest)}>Rest</button>

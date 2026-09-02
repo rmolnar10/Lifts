@@ -1,6 +1,14 @@
 # Changelog
 
 ## Post-V5 fixes
+- Volume Upper reworked: incline DB press 4x8-12 -> 5x6-10, and close-grip
+  push-ups replaced by an overhead triceps extension 3x10-15. Chest goes from 8
+  to 9 direct weekly sets and triceps from 3 to 6, matching biceps.
+- Pull-ups no longer show a phantom "0 reps" load, and now progress to external
+  weight in 2.5 lb steps once every set reaches 10.
+- The set/rep badge reads "4 x 5-8 reps" rather than "4 x 5-8 lb".
+- Editing a workout no longer deletes performances for exercises that have since
+  left the program.
 - Automated end-to-end QA: `npm run qa` drives a real Chromium through the app
   at phone and desktop viewports, against a throwaway Postgres running the real
   migrations and RLS policies. 30 checks.

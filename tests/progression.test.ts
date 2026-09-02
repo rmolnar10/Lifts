@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PROGRAM, findExercise, startKey } from "@/lib/program";
+import { PROGRAM, findExercise, startKey, type Exercise } from "@/lib/program";
 import { suggest } from "@/lib/progression";
 import type { Workout } from "@/lib/types";
 import { exerciseById, repsFromTarget, workout } from "./helpers";
@@ -109,10 +109,27 @@ describe("exercise-specific increments", () => {
     expect(suggest(wpull, HEAVY, history, {}).weight).toBe(27.5);
   });
 
-  it("progresses bodyweight pull-ups by reps toward the top of the range", () => {
+  it("progresses bodyweight pull-ups by reps, without printing a phantom load", () => {
     const pull = exerciseById(PROGRAM[VOLUME], "pull");
-    const history = [workout(VOLUME, "pull", { reps: [8, 7, 6], weight: 0, unit: "reps" })];
-    expect(suggest(pull, VOLUME, history, {}).target).toBe("0 reps × 8 / 7 / 7");
+    const history = [workout(VOLUME, "pull", { reps: [8, 7, 6], weight: 0, unit: "lb" })];
+    const s = suggest(pull, VOLUME, history, {});
+    expect(s.target).toBe("Bodyweight × 8 / 7 / 7");
+    expect(s.target).not.toContain("0 lb");
+  });
+
+  it("sends bodyweight pull-ups to external load once the range tops out", () => {
+    const pull = exerciseById(PROGRAM[VOLUME], "pull");
+    const history = [workout(VOLUME, "pull", { reps: [10, 10, 10], weight: 0, unit: "lb" })];
+    const s = suggest(pull, VOLUME, history, {});
+    expect(s.target).toBe("2.5 lb × 6–10");
+    expect(s.focus).toBe("All sets reached 10. Start adding external load.");
+    expect(s.weight).toBe(2.5);
+  });
+
+  it("treats an already-weighted pull-up as a normal loaded exercise", () => {
+    const pull = exerciseById(PROGRAM[VOLUME], "pull");
+    const history = [workout(VOLUME, "pull", { reps: [10, 9, 8], weight: 25, unit: "lb" })];
+    expect(suggest(pull, VOLUME, history, {}).target).toBe("25 lb × 10 / 9 / 9");
   });
 
   it("handles high-rep isolation ranges", () => {
@@ -125,12 +142,35 @@ describe("exercise-specific increments", () => {
 });
 
 describe("non-load exercise types", () => {
-  it("treats close-grip push-ups as optional with no forced target", () => {
-    const pushup = exerciseById(PROGRAM[VOLUME], "pushup");
-    const s = suggest(pushup, VOLUME, [], {});
+  it("still handles optional exercises, though the program no longer has one", () => {
+    // The close-grip push-up slot became a progressable triceps movement. The
+    // branch stays covered so the behaviour is available if a future program
+    // reintroduces an optional exercise.
+    const optional: Exercise = {
+      id: "synthetic",
+      name: "Optional Finisher",
+      sets: 2,
+      min: 0,
+      max: 0,
+      type: "optional",
+      unit: "reps",
+      inc: 0,
+      reset: 0,
+      rest: 90,
+    };
+    const s = suggest(optional, VOLUME, [], {});
     expect(s.target).toBe("Optional — 2 sets near failure");
     expect(s.focus).toBe("Record reps; no forced progression.");
     expect(s.weight).toBe("");
+  });
+
+  it("progresses the overhead triceps extension like any other isolation", () => {
+    const ohtri = exerciseById(PROGRAM[VOLUME], "ohtri");
+    expect(ohtri.sets).toBe(3);
+    const building = [workout(VOLUME, "ohtri", { reps: [15, 13, 11], weight: 40 })];
+    expect(suggest(ohtri, VOLUME, building, {}).target).toBe("40 lb × 15 / 13 / 12");
+    const maxed = [workout(VOLUME, "ohtri", { reps: [15, 15, 15], weight: 40 })];
+    expect(suggest(ohtri, VOLUME, maxed, {}).target).toBe("45 lb × 10–15");
   });
 
   it("keeps reverse kegel practice non-progressive", () => {
@@ -178,6 +218,25 @@ describe("program integrity", () => {
     expect(PROGRAM[HEAVY]).toHaveLength(7);
     expect(PROGRAM[VOLUME]).toHaveLength(6);
     expect(PROGRAM[LEGS]).toHaveLength(6);
+  });
+
+  it("gives triceps and biceps comparable weekly volume", () => {
+    // The close-grip push-up swap existed to fix a 3-vs-6 split.
+    const sets = (id: string) =>
+      Object.values(PROGRAM)
+        .flat()
+        .filter((e) => e.id === id)
+        .reduce((n, e) => n + e.sets, 0);
+    const triceps = sets("tri") + sets("ohtri");
+    const biceps = sets("curl") + sets("hammer");
+    expect(triceps).toBe(6);
+    expect(biceps).toBe(6);
+  });
+
+  it("gives the priority muscle more direct work than before", () => {
+    const chest = PROGRAM[HEAVY].find((e) => e.id === "bench")!.sets +
+      PROGRAM[VOLUME].find((e) => e.id === "incline")!.sets;
+    expect(chest).toBe(9);
   });
 
   it("exposes every exercise by day and id", () => {

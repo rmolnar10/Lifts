@@ -16,7 +16,7 @@ For normal rep-range exercises:
 - Bench: 4x5-8
 - Weighted pull-up: 4x5-8
 - DB shoulder press: 3x6-10
-- Incline DB press: 4x8-12
+- Incline DB press: 5x6-10
 - Squat: 3x5-8
 - RDL: 3x8-12
 
@@ -26,6 +26,7 @@ Use weakest-set progression. Load increases only after all sets reach the top.
 - Heavy cable row: 3x8-12
 - Heavy lateral raise: 3x12-20
 - Triceps pushdown: 3x10-15
+- Overhead triceps extension: 3x10-15
 - Curl: 3x8-12
 - Volume cable row: 3x10-15
 - Volume lateral raise: 3x15-20
@@ -35,7 +36,9 @@ Use weakest-set progression. Load increases only after all sets reach the top.
 Use weakest-set progression and controlled reps.
 
 ## Bodyweight
-Pull-ups progress toward the top of the range before adding external load.
+Pull-ups progress toward the top of the range before adding external load. Once
+every set reaches 10, the app switches to prescribing external load in 2.5 lb
+steps; until then it shows "Bodyweight" rather than a load of zero.
 
 ## Quality-controlled
 Hanging leg raise prioritizes clean, controlled reps.
@@ -47,7 +50,10 @@ Side plank progresses time toward 60 seconds before increasing difficulty.
 Reverse Kegel practice is completion/quality, not progressive overload.
 
 ## Optional
-Close-grip push-ups are recorded but have no forced progression target.
+No exercise currently uses this type. Close-grip push-ups did, and were replaced
+by the overhead triceps extension because an unprogressed optional slot left
+direct triceps volume at 3 sets/week against 6 for biceps. The engine still
+supports the type if a future program needs it.
 
 ## RIR
 RIR is currently an input/guardrail. Future V6 can use RIR to refine progression.

@@ -49,6 +49,19 @@ export function reachedTopOfRange(reps: number[], exercise: Exercise): boolean {
   return reps.length === exercise.sets && reps.every((r) => r >= exercise.max);
 }
 
+/**
+ * How a load reads inside a target line.
+ *
+ * Bodyweight movements carry no external load until you start adding plates,
+ * and "0 lb × 10 / 9 / 9" is nonsense on a pull-up. This is a deliberate
+ * divergence from V4, which printed the raw number for every exercise type —
+ * see tests/v4-parity.test.ts, which documents it.
+ */
+function formatLoad(weight: number, exercise: Exercise): string {
+  if (exercise.type === "bodyweight" && !weight) return "Bodyweight";
+  return `${weight} ${exercise.unit}`;
+}
+
 export function suggest(
   exercise: Exercise,
   day: string,
@@ -107,9 +120,14 @@ export function suggest(
 
   if (top) {
     const next = Number(p.weight) + exercise.inc;
+    // Topping out a bodyweight movement is the cue to start adding plates,
+    // not to "increase load" on something that has none yet.
+    const startingToLoad = exercise.type === "bodyweight" && !p.weight;
     return {
-      target: `${next} ${exercise.unit} × ${exercise.reset}–${exercise.max}`,
-      focus: `All sets reached ${exercise.max}. Increase load.`,
+      target: `${formatLoad(next, exercise)} × ${exercise.reset}–${exercise.max}`,
+      focus: startingToLoad
+        ? `All sets reached ${exercise.max}. Start adding external load.`
+        : `All sets reached ${exercise.max}. Increase load.`,
       weight: next,
     };
   }
@@ -117,7 +135,7 @@ export function suggest(
   const targetReps = reps.slice();
   targetReps[low] = Math.min(exercise.max, targetReps[low] + 1);
   return {
-    target: `${p.weight} ${exercise.unit} × ${targetReps.join(" / ")}`,
+    target: `${formatLoad(p.weight, exercise)} × ${targetReps.join(" / ")}`,
     focus: `Prioritize Set ${low + 1}; add one clean rep.`,
     weight: p.weight,
   };
