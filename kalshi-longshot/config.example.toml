@@ -1,0 +1,40 @@
+# Copy to config.toml. Every key is optional; these are the defaults.
+
+[api]
+env = "demo"              # "demo" or "prod". Live trading on prod also needs --real-money.
+key_id = ""               # or set KALSHI_KEY_ID
+private_key_path = ""     # or set KALSHI_PRIVATE_KEY_PATH (the .pem Kalshi gives you)
+
+[universe]
+min_yes_cents = 3         # only markets whose YES mid is in this range (the long shots)
+max_yes_cents = 20
+min_hours_to_close = 6
+max_days_to_close = 30    # capital is locked until settlement; shorter is better
+min_volume_24h = 200      # waived for markets in a liquidity incentive program
+max_spread_cents = 6      # waived for incentive markets
+exclude_categories = []
+max_markets = 15
+max_pages = 30            # pages of 1000 open markets to scan
+include_incentive_markets = true
+
+[model]
+calibration_file = "calibration.json"
+quote_uncalibrated = false      # skip markets whose price bucket lacks calibration data
+fallback_longshot_ratio = 1.0   # if quote_uncalibrated: fair YES = price * ratio (1.0 = spread capture only)
+min_edge_cents = 2.0            # required edge per contract after the maker fee
+min_bucket_samples = 100        # ignore calibration buckets with fewer settled markets
+
+[sizing]
+contracts_per_quote = 10
+max_cost_per_market_cents = 1000   # $10 worst-case loss per market
+max_cost_per_event_cents = 2000    # $20 per event (related markets move together)
+max_total_cost_cents = 10000       # $100 across everything
+
+[risk]
+max_drawdown_cents = 2500     # stop and cancel everything after a $25 drop in equity
+kill_switch_file = "STOP"     # `touch STOP` to make a running bot cancel and exit
+order_ttl_seconds = 600       # orders expire on their own if the bot dies
+
+[loop]
+interval_seconds = 60
+db_path = "longshot.db"       # shadow-trading ledger
