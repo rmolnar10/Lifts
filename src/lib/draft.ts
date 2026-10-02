@@ -11,7 +11,7 @@
  * not something to sync across devices or put in the database.
  */
 
-import { PROGRAM } from "./program";
+import { exercisesForDay, type ActiveProgram } from "./activeProgram";
 
 /** Bump when the stored shape changes so old drafts are ignored rather than misread. */
 const DRAFT_VERSION = 1;
@@ -38,8 +38,13 @@ export interface WorkoutDraft {
  * not clobber a half-finished Legs day, and two accounts sharing a browser stay
  * separate.
  */
-export function draftKey(account: string, day: string, editingId: string | null): string {
-  return `${KEY_PREFIX}:${account}:${editingId ?? "new"}:${day}`;
+export function draftKey(
+  account: string,
+  programId: string,
+  day: string,
+  editingId: string | null,
+): string {
+  return `${KEY_PREFIX}:${account}:${programId}:${editingId ?? "new"}:${day}`;
 }
 
 function storage(): Storage | null {
@@ -56,9 +61,9 @@ function storage(): Storage | null {
  * set counts. If the program changes underneath it, discard rather than
  * rendering a form with missing or extra rows.
  */
-function matchesProgram(draft: WorkoutDraft): boolean {
-  const exercises = PROGRAM[draft.day];
-  if (!exercises) return false;
+function matchesProgram(draft: WorkoutDraft, program: ActiveProgram): boolean {
+  const exercises = exercisesForDay(program, draft.day);
+  if (!exercises.length) return false;
   return exercises.every((exercise) => {
     const form = draft.forms[exercise.id];
     return (
@@ -73,6 +78,7 @@ function matchesProgram(draft: WorkoutDraft): boolean {
 
 export function readDraft(
   account: string,
+  program: ActiveProgram,
   day: string,
   editingId: string | null,
   now: number = Date.now(),
@@ -80,7 +86,7 @@ export function readDraft(
   const store = storage();
   if (!store) return null;
 
-  const key = draftKey(account, day, editingId);
+  const key = draftKey(account, program.id, day, editingId);
   let raw: string | null;
   try {
     raw = store.getItem(key);
@@ -93,18 +99,18 @@ export function readDraft(
   try {
     draft = JSON.parse(raw) as WorkoutDraft;
   } catch {
-    clearDraft(account, day, editingId);
+    clearDraft(account, program.id, day, editingId);
     return null;
   }
 
   const savedAt = Date.parse(draft?.savedAt ?? "");
   if (!draft || typeof draft !== "object" || Number.isNaN(savedAt)) {
-    clearDraft(account, day, editingId);
+    clearDraft(account, program.id, day, editingId);
     return null;
   }
 
-  if (now - savedAt > DRAFT_MAX_AGE_MS || !matchesProgram(draft)) {
-    clearDraft(account, day, editingId);
+  if (now - savedAt > DRAFT_MAX_AGE_MS || !matchesProgram(draft, program)) {
+    clearDraft(account, program.id, day, editingId);
     return null;
   }
 
@@ -113,24 +119,30 @@ export function readDraft(
 
 export function writeDraft(
   account: string,
+  programId: string,
   editingId: string | null,
   draft: WorkoutDraft,
 ): void {
   const store = storage();
   if (!store) return;
   try {
-    store.setItem(draftKey(account, draft.day, editingId), JSON.stringify(draft));
+    store.setItem(draftKey(account, programId, draft.day, editingId), JSON.stringify(draft));
   } catch {
     // Quota exceeded or blocked — losing the draft mirror is not worth breaking
     // the workout the user is in the middle of logging.
   }
 }
 
-export function clearDraft(account: string, day: string, editingId: string | null): void {
+export function clearDraft(
+  account: string,
+  programId: string,
+  day: string,
+  editingId: string | null,
+): void {
   const store = storage();
   if (!store) return;
   try {
-    store.removeItem(draftKey(account, day, editingId));
+    store.removeItem(draftKey(account, programId, day, editingId));
   } catch {
     // Ignore.
   }

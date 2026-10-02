@@ -1,18 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { UNTRACKED_TYPES, allExercises, findExercise } from "@/lib/program";
+import { UNTRACKED_TYPES } from "@/lib/program";
+import { allExercisesIn, findExerciseIn, type ActiveProgram } from "@/lib/activeProgram";
 import { estimatedOneRepMax } from "@/lib/stats";
 import type { AppState } from "@/lib/types";
 
-export default function ProgressView({ state }: { state: AppState }) {
-  const options = allExercises().filter(({ e }) => !UNTRACKED_TYPES.includes(e.type));
+export default function ProgressView({
+  state,
+  program,
+}: {
+  state: AppState;
+  program: ActiveProgram;
+}) {
+  const options = allExercisesIn(program).filter(({ e }) => !UNTRACKED_TYPES.includes(e.type));
   const [selected, setSelected] = useState(() =>
     options.length ? `${options[0].day}|${options[0].e.id}` : "",
   );
 
   const [day, exerciseId] = selected.split("|");
-  const exercise = day && exerciseId ? findExercise(day, exerciseId) : undefined;
+  const exercise = day && exerciseId ? findExerciseIn(program, day, exerciseId) : undefined;
   const rows = state.workouts.filter((w) => w.day === day && w.exercises[exerciseId]).slice(-12);
   const values = rows.map((w) => w.exercises[exerciseId].weight || 0);
   const max = Math.max(...values, 1);

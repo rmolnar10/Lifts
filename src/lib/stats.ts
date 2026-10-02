@@ -3,7 +3,7 @@
  * Ported from V4 so dashboard/PR/progress numbers stay identical.
  */
 
-import { allExercises } from "./program";
+import { allExercisesIn, type ActiveProgram } from "./activeProgram";
 import type { Workout } from "./types";
 
 export interface PersonalRecord {
@@ -13,9 +13,9 @@ export interface PersonalRecord {
   value: string;
 }
 
-export function calcPRs(workouts: Workout[]): PersonalRecord[] {
+export function calcPRs(workouts: Workout[], program: ActiveProgram): PersonalRecord[] {
   const result: PersonalRecord[] = [];
-  allExercises().forEach(({ day, e }) => {
+  allExercisesIn(program).forEach(({ day, e }) => {
     const entries = workouts.filter((w) => w.day === day && w.exercises[e.id]);
     if (!entries.length) return;
     const load = Math.max(...entries.map((w) => w.exercises[e.id].weight || 0));

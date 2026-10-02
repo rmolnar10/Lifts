@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import { PROGRAM } from "@/lib/program";
 import { retiredExercisePayloads } from "@/lib/retired";
 import type { Workout } from "@/lib/types";
+import { builtinActiveProgram } from "./helpers";
 
 const VOLUME = "Volume Upper";
+const PROG = builtinActiveProgram();
 
 /** A real Volume Upper session logged before close-grip push-ups were replaced. */
 const legacyWorkout: Workout = {
@@ -20,7 +22,7 @@ const legacyWorkout: Workout = {
 
 describe("exercises removed from the program", () => {
   it("keeps a retired exercise's performance when the workout is re-saved", () => {
-    const carried = retiredExercisePayloads(VOLUME, legacyWorkout);
+    const carried = retiredExercisePayloads(VOLUME, legacyWorkout, PROG);
 
     expect(carried).toHaveLength(1);
     expect(carried[0]).toEqual({
@@ -34,7 +36,7 @@ describe("exercises removed from the program", () => {
   });
 
   it("does not duplicate exercises the program still has", () => {
-    const ids = retiredExercisePayloads(VOLUME, legacyWorkout).map((e) => e.exercise_id);
+    const ids = retiredExercisePayloads(VOLUME, legacyWorkout, PROG).map((e) => e.exercise_id);
     for (const exercise of PROGRAM[VOLUME]) {
       expect(ids).not.toContain(exercise.id);
     }
@@ -50,14 +52,14 @@ describe("exercises removed from the program", () => {
         ]),
       ),
     };
-    expect(retiredExercisePayloads(VOLUME, current)).toEqual([]);
+    expect(retiredExercisePayloads(VOLUME, current, PROG)).toEqual([]);
   });
 
   it("returns nothing when logging a new workout rather than editing", () => {
-    expect(retiredExercisePayloads(VOLUME, null)).toEqual([]);
+    expect(retiredExercisePayloads(VOLUME, null, PROG)).toEqual([]);
   });
 
   it("survives an unknown day without throwing", () => {
-    expect(retiredExercisePayloads("Nonexistent Day", legacyWorkout)).toHaveLength(3);
+    expect(retiredExercisePayloads("Nonexistent Day", legacyWorkout, PROG)).toHaveLength(3);
   });
 });

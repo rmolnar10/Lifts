@@ -1,0 +1,52 @@
+{
+  "slug": "qa-test-program",
+  "name": "QA Test Program",
+  "notes": "A tiny synthetic program used by the browser QA suite.",
+  "weeks": 4,
+  "blocks": [
+    {
+      "name": "Weeks 1-2",
+      "week_start": 1,
+      "week_end": 2,
+      "days": [
+        {
+          "name": "Push Day",
+          "position": 0,
+          "exercises": [
+            {
+              "position": 0, "key": "qa_press", "name": "QA Overhead Press",
+              "sets": 3, "min_reps": 5, "max_reps": 8, "progression_type": "primary",
+              "unit": "lb", "increment": 5, "reset_reps": 5, "rest_seconds": 150,
+              "target_rpe_low": 8, "target_rpe_high": 9
+            },
+            {
+              "position": 1, "key": "qa_pushdown", "name": "QA Pushdown",
+              "sets": 2, "min_reps": 10, "max_reps": 15, "progression_type": "isolation",
+              "unit": "lb", "increment": 5, "reset_reps": 10, "rest_seconds": 90,
+              "target_rpe_low": 10, "target_rpe_high": 10, "dropset": true,
+              "superset_group": "A1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Weeks 3-4",
+      "week_start": 3,
+      "week_end": 4,
+      "days": [
+        {
+          "name": "Push Day",
+          "position": 0,
+          "exercises": [
+            {
+              "position": 0, "key": "qa_bench", "name": "QA Bench",
+              "sets": 3, "min_reps": 4, "max_reps": 6, "progression_type": "primary",
+              "unit": "lb", "increment": 5, "reset_reps": 4, "rest_seconds": 180
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

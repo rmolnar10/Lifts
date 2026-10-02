@@ -1,6 +1,6 @@
 "use client";
 
-import { DAYS, PROGRAM } from "@/lib/program";
+import { exercisesForDay } from "@/lib/activeProgram";
 import { suggest } from "@/lib/progression";
 import { calcPRs, totalVolume } from "@/lib/stats";
 import type { SharedViewProps } from "@/components/AppShell";
@@ -9,7 +9,7 @@ interface Props extends SharedViewProps {
   onStartWorkout: (day: string) => void;
 }
 
-export default function Dashboard({ state, day, setDay, onStartWorkout }: Props) {
+export default function Dashboard({ state, day, setDay, program, onStartWorkout }: Props) {
   const { workouts, starts } = state;
   const volume = totalVolume(workouts);
   const last = workouts.length ? workouts[workouts.length - 1] : null;
@@ -22,7 +22,7 @@ export default function Dashboard({ state, day, setDay, onStartWorkout }: Props)
           <div className="label">Workouts</div>
         </div>
         <div className="stat">
-          <div className="num">{calcPRs(workouts).length}</div>
+          <div className="num">{calcPRs(workouts, program).length}</div>
           <div className="label">PR entries</div>
         </div>
         <div className="stat">
@@ -38,13 +38,13 @@ export default function Dashboard({ state, day, setDay, onStartWorkout }: Props)
       <div className="card" style={{ marginTop: 12 }}>
         <h2>Next workout</h2>
         <div className="tabs">
-          {DAYS.map((d) => (
+          {program.dayOrder.map((d) => (
             <button key={d} className={day === d ? "active" : ""} onClick={() => setDay(d)}>
               {d}
             </button>
           ))}
         </div>
-        {PROGRAM[day].map((exercise) => {
+        {exercisesForDay(program, day).map((exercise) => {
           const s = suggest(exercise, day, workouts, starts);
           return (
             <div className="target" key={exercise.id}>

@@ -75,8 +75,8 @@ function rowToWorkout(row: WorkoutRow): Workout {
   };
 }
 
-/** Loads the signed-in user's entire training history. */
-export async function loadState(): Promise<AppState> {
+/** Loads the signed-in user's history for one program. */
+export async function loadState(programId: string): Promise<AppState> {
   const supabase = getSupabaseBrowserClient();
 
   const [workoutsResult, settingsResult] = await Promise.all([
@@ -87,9 +87,13 @@ export async function loadState(): Promise<AppState> {
           "workout_exercises (exercise_id, name, weight, unit, rir, position, " +
           "workout_sets (set_number, reps))",
       )
+      .eq("program_id", programId)
       .order("performed_at", { ascending: true })
       .order("created_at", { ascending: true }),
-    supabase.from("user_exercise_settings").select("day, exercise_id, starting_weight"),
+    supabase
+      .from("user_exercise_settings")
+      .select("day, exercise_id, starting_weight")
+      .eq("program_id", programId),
   ]);
 
   if (workoutsResult.error) throw workoutsResult.error;
@@ -116,6 +120,8 @@ export async function saveWorkout(params: {
   performedAt: string | null;
   notes: string;
   exercises: ExercisePayload[];
+  programId: string;
+  weekNumber: number | null;
 }): Promise<string> {
   const supabase = getSupabaseBrowserClient();
   const { data, error } = await supabase.rpc("save_workout", {
@@ -124,6 +130,8 @@ export async function saveWorkout(params: {
     p_performed_at: params.performedAt,
     p_notes: params.notes,
     p_exercises: params.exercises,
+    p_program_id: params.programId,
+    p_week_number: params.weekNumber,
   });
   if (error) throw error;
   return data as string;
@@ -136,7 +144,10 @@ export async function deleteWorkout(workoutId: string): Promise<void> {
 }
 
 /** Replaces the user's starting weights. An empty value clears that entry. */
-export async function saveStartingWeights(starts: StartingWeights): Promise<void> {
+export async function saveStartingWeights(
+  starts: StartingWeights,
+  programId: string,
+): Promise<void> {
   const supabase = getSupabaseBrowserClient();
   const payload = Object.entries(starts).map(([key, value]) => {
     const [day, exerciseId] = splitStartKey(key);
@@ -146,12 +157,15 @@ export async function saveStartingWeights(starts: StartingWeights): Promise<void
       starting_weight: value === "" ? null : Number(value),
     };
   });
-  const { error } = await supabase.rpc("save_starting_weights", { p_starts: payload });
+  const { error } = await supabase.rpc("save_starting_weights", {
+    p_starts: payload,
+    p_program_id: programId,
+  });
   if (error) throw error;
 }
 
-/** Replaces ALL cloud data with the contents of a backup. */
-export async function importBackup(state: AppState): Promise<number> {
+/** Replaces this program's cloud data with the contents of a backup. */
+export async function importBackup(state: AppState, programId: string): Promise<number> {
   const supabase = getSupabaseBrowserClient();
 
   const starts = Object.entries(state.starts).map(([key, value]) => {
@@ -180,15 +194,16 @@ export async function importBackup(state: AppState): Promise<number> {
   const { data, error } = await supabase.rpc("import_backup", {
     p_starts: starts,
     p_workouts: workouts,
+    p_program_id: programId,
   });
   if (error) throw error;
   return Number(data ?? 0);
 }
 
-/** Deletes every workout and starting weight for the signed-in user. */
-export async function deleteAllData(): Promise<void> {
+/** Deletes every workout and starting weight belonging to one program. */
+export async function deleteAllData(programId: string): Promise<void> {
   const supabase = getSupabaseBrowserClient();
-  const { error } = await supabase.rpc("delete_all_data");
+  const { error } = await supabase.rpc("delete_all_data", { p_program_id: programId });
   if (error) throw error;
 }
 

@@ -8,13 +8,14 @@ import type { AppState } from "@/lib/types";
 interface Props {
   state: AppState;
   refresh: () => Promise<void>;
+  programId: string;
 }
 
 /**
  * V2–V4 kept everything in localStorage. If this browser still has that data and
  * the cloud account is empty, offer to upload it once so nothing is lost.
  */
-export default function LegacyImportBanner({ state, refresh }: Props) {
+export default function LegacyImportBanner({ state, refresh, programId }: Props) {
   const [legacy, setLegacy] = useState<{ key: string; state: AppState } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +34,7 @@ export default function LegacyImportBanner({ state, refresh }: Props) {
     setBusy(true);
     setError(null);
     try {
-      await importBackup(legacy.state);
+      await importBackup(legacy.state, programId);
       await refresh();
       clearLegacyLocalData();
       setDone(true);

@@ -1,14 +1,24 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { UNTRACKED_TYPES, allExercises, startKey } from "@/lib/program";
+import { UNTRACKED_TYPES, startKey } from "@/lib/program";
+import { allExercisesIn } from "@/lib/activeProgram";
+import { importProgram, type ProgramSummary } from "@/lib/programs";
+import type { ProgramSpec } from "@/lib/programSpec";
 import { deleteAllData, importBackup, saveStartingWeights } from "@/lib/data";
 import { parseBackup, serialiseBackup } from "@/lib/backup";
 import type { SharedViewProps } from "@/components/AppShell";
 import type { StartingWeights } from "@/lib/types";
 
-export default function SettingsView({ state, refresh, setError }: SharedViewProps) {
-  const tracked = allExercises().filter(({ e }) => !UNTRACKED_TYPES.includes(e.type));
+export default function SettingsView({
+  state,
+  refresh,
+  setError,
+  program,
+  programs,
+  onProgramsChanged,
+}: SharedViewProps) {
+  const tracked = allExercisesIn(program).filter(({ e }) => !UNTRACKED_TYPES.includes(e.type));
 
   const [starts, setStarts] = useState<StartingWeights>(() => ({ ...state.starts }));
   const [savingStarts, setSavingStarts] = useState(false);
@@ -16,6 +26,8 @@ export default function SettingsView({ state, refresh, setError }: SharedViewPro
   const [importing, setImporting] = useState(false);
   const [resetting, setResetting] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
+  const programInput = useRef<HTMLInputElement>(null);
+  const [importingProgram, setImportingProgram] = useState(false);
 
   function fail(e: unknown, fallback: string) {
     setStatus(null);
@@ -27,7 +39,7 @@ export default function SettingsView({ state, refresh, setError }: SharedViewPro
     setError(null);
     setStatus(null);
     try {
-      await saveStartingWeights(starts);
+      await saveStartingWeights(starts, program.id);
       await refresh();
       setStatus("Starting weights saved.");
     } catch (e) {
@@ -64,14 +76,14 @@ export default function SettingsView({ state, refresh, setError }: SharedViewPro
     }
 
     const confirmed = window.confirm(
-      `Import ${parsed.workouts.length} workout(s)? This replaces all of your cloud data ` +
-        "for this account and cannot be undone.",
+      `Import ${parsed.workouts.length} workout(s) into ${program.name}? This replaces that ` +
+        "program's cloud data and cannot be undone.",
     );
     if (!confirmed) return;
 
     setImporting(true);
     try {
-      const count = await importBackup(parsed);
+      const count = await importBackup(parsed, program.id);
       await refresh();
       setStarts({ ...parsed.starts });
       setStatus(`Backup imported — ${count} workout(s) restored.`);
@@ -83,12 +95,12 @@ export default function SettingsView({ state, refresh, setError }: SharedViewPro
   }
 
   async function onReset() {
-    if (!window.confirm("Delete all workout data and starting weights?")) return;
+    if (!window.confirm(`Delete all ${program.name} workouts and starting weights? Other programs are not affected.`)) return;
     setResetting(true);
     setError(null);
     setStatus(null);
     try {
-      await deleteAllData();
+      await deleteAllData(program.id);
       await refresh();
       setStarts({});
       setStatus("All data deleted.");
@@ -99,9 +111,77 @@ export default function SettingsView({ state, refresh, setError }: SharedViewPro
     }
   }
 
+  async function onImportProgram(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setError(null);
+    setStatus(null);
+
+    let spec: ProgramSpec;
+    try {
+      spec = JSON.parse(await file.text()) as ProgramSpec;
+      if (!spec.slug || !Array.isArray(spec.blocks)) {
+        throw new Error("that file is not a program (it needs a slug and blocks)");
+      }
+    } catch (e) {
+      fail(e, "Could not read that program");
+      return;
+    }
+
+    setImportingProgram(true);
+    try {
+      await importProgram(spec);
+      await onProgramsChanged();
+      setStatus(`"${spec.name ?? spec.slug}" imported. Switch to it at the top of the page.`);
+    } catch (e) {
+      fail(e, "Could not import that program");
+    } finally {
+      setImportingProgram(false);
+    }
+  }
+
   return (
     <>
       {status ? <div className="notice success">{status}</div> : null}
+
+      <div className="card">
+        <h2>Programs</h2>
+        <p className="muted small">
+          Each program keeps its own history, targets, PRs and starting weights. Nothing is
+          shared between them.
+        </p>
+        {programs.map((p: ProgramSummary) => (
+          <div className="pr" key={p.id}>
+            <span>
+              <b>{p.name}</b>
+              <br />
+              <span className="muted small">
+                {p.weeks ? `${p.weeks} weeks` : "Ongoing"}
+                {p.id === program.id ? " · currently active" : ""}
+              </span>
+            </span>
+          </div>
+        ))}
+        <div className="actions">
+          <button onClick={() => programInput.current?.click()} disabled={importingProgram}>
+            {importingProgram ? "Importing…" : "Import a program"}
+          </button>
+          <input
+            ref={programInput}
+            id="program-import"
+            type="file"
+            accept=".json,application/json"
+            style={{ display: "none" }}
+            onChange={onImportProgram}
+          />
+        </div>
+        <p className="muted small">
+          Importing a program with a slug you already have replaces its structure and keeps
+          the workouts logged against it.
+        </p>
+      </div>
 
       <div className="card">
         <h2>Starting weights</h2>
@@ -149,6 +229,7 @@ export default function SettingsView({ state, refresh, setError }: SharedViewPro
           </button>
           <input
             ref={fileInput}
+            id="backup-import"
             type="file"
             accept=".json,application/json"
             style={{ display: "none" }}

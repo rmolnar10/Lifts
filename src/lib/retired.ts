@@ -7,7 +7,7 @@
  * them, deleting history the user never asked to delete.
  */
 
-import { PROGRAM } from "./program";
+import { exercisesForDay, type ActiveProgram } from "./activeProgram";
 import type { Unit } from "./program";
 import type { Workout } from "./types";
 
@@ -27,9 +27,10 @@ export interface RetiredExercisePayload {
 export function retiredExercisePayloads(
   day: string,
   workout: Workout | null,
+  program: ActiveProgram,
 ): RetiredExercisePayload[] {
   if (!workout) return [];
-  const inProgram = new Set((PROGRAM[day] ?? []).map((e) => e.id));
+  const inProgram = new Set(exercisesForDay(program, day).map((e) => e.id));
 
   return Object.entries(workout.exercises)
     .filter(([id]) => !inProgram.has(id))

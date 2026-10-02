@@ -1,4 +1,5 @@
-import type { Exercise } from "@/lib/program";
+import { PROGRAM, type Exercise } from "@/lib/program";
+import type { ActiveProgram } from "@/lib/activeProgram";
 import type { LoggedExercise, Workout } from "@/lib/types";
 
 let counter = 0;
@@ -41,4 +42,22 @@ export function exerciseById(list: Exercise[], id: string): Exercise {
   const found = list.find((e) => e.id === id);
   if (!found) throw new Error(`Unknown exercise ${id}`);
   return found;
+}
+
+/**
+ * The built-in program as the app now sees it: resolved from the PROGRAM
+ * constant into the shape views and helpers consume.
+ */
+export function builtinActiveProgram(): ActiveProgram {
+  return {
+    id: "00000000-0000-0000-0000-0000000000aa",
+    slug: "lifts-3day",
+    name: "Lifts 3-Day",
+    weeks: null,
+    week: 1,
+    blockName: "Ongoing",
+    hasWeeks: false,
+    dayOrder: Object.keys(PROGRAM),
+    days: PROGRAM,
+  };
 }

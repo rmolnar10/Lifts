@@ -165,6 +165,18 @@ button:disabled {
   background: #eef2f6;
   padding: 4px 8px;
   border-radius: 99px;
+  white-space: nowrap;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 2px;
+}
+
+.badge.warn-badge {
+  background: #fff3d8;
 }
 
 .sets {

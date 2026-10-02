@@ -1,9 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { DAYS } from "@/lib/program";
 import { loadState } from "@/lib/data";
 import { EMPTY_STATE, type AppState } from "@/lib/types";
+import {
+  blockForWeek,
+  ensurePrograms,
+  listPrograms,
+  loadProgram,
+  setActiveProgram,
+  type ProgramSummary,
+} from "@/lib/programs";
+import { defaultDay, type ActiveProgram } from "@/lib/activeProgram";
+import ProgramPicker from "@/components/ProgramPicker";
 import Dashboard from "@/components/views/Dashboard";
 import WorkoutView from "@/components/views/WorkoutView";
 import HistoryView from "@/components/views/HistoryView";
@@ -19,15 +28,42 @@ export type ViewName = (typeof VIEWS)[number];
 export default function AppShell({ userEmail }: { userEmail: string }) {
   const [state, setState] = useState<AppState>(EMPTY_STATE);
   const [view, setView] = useState<ViewName>("Dashboard");
-  const [day, setDay] = useState<string>(DAYS[0]);
+  const [day, setDay] = useState<string>("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [restEndsAt, setRestEndsAt] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
+  const [programs, setPrograms] = useState<ProgramSummary[]>([]);
+  const [program, setProgram] = useState<ActiveProgram | null>(null);
+  const [week, setWeek] = useState(1);
+
+  /** Resolves a program id plus a week into the days and exercises to show. */
+  const openProgram = useCallback(async (programId: string, atWeek: number) => {
+    const loaded = await loadProgram(programId);
+    const block = blockForWeek(loaded, atWeek);
+    const hasWeeks = loaded.blocks.length > 1 || loaded.blocks.some((b) => b.weekEnd !== null);
+    const active: ActiveProgram = {
+      id: loaded.id,
+      slug: loaded.slug,
+      name: loaded.name,
+      weeks: loaded.weeks,
+      week: atWeek,
+      blockName: block?.name ?? "",
+      hasWeeks,
+      dayOrder: block?.dayOrder ?? [],
+      days: block?.days ?? {},
+    };
+    setProgram(active);
+    setDay((current) => (current && active.days[current] ? current : defaultDay(active)));
+    return active;
+  }, []);
+
+  const refresh = useCallback(async (programId?: string) => {
+    const id = programId ?? program?.id;
+    if (!id) return;
     try {
-      setState(await loadState());
+      setState(await loadState(id));
       setError(null);
     } catch (e) {
       setError(
@@ -36,11 +72,63 @@ export default function AppShell({ userEmail }: { userEmail: string }) {
           : "Could not load your data.",
       );
     }
+  }, [program?.id]);
+
+  // First load: make sure the account has the built-in program, adopt any
+  // history that predates programs, then open whichever is active.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { programs: list, activeId } = await ensurePrograms();
+        if (cancelled) return;
+        setPrograms(list);
+        await openProgram(activeId, 1);
+        if (!cancelled) await loadState(activeId).then(setState);
+      } catch (e) {
+        if (!cancelled) {
+          setError(
+            e instanceof Error
+              ? `Could not load your programs: ${e.message}`
+              : "Could not load your programs.",
+          );
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [openProgram]);
+
+  const reloadPrograms = useCallback(async () => {
+    setPrograms(await listPrograms());
   }, []);
 
-  useEffect(() => {
-    void refresh().finally(() => setLoading(false));
-  }, [refresh]);
+  async function switchProgram(programId: string) {
+    setLoading(true);
+    setEditingId(null);
+    setView("Dashboard");
+    try {
+      await setActiveProgram(programId);
+      setWeek(1);
+      await openProgram(programId, 1);
+      setState(await loadState(programId));
+      setError(null);
+    } catch (e) {
+      setError(e instanceof Error ? `Could not switch program: ${e.message}` : "Could not switch program.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function changeWeek(next: number) {
+    if (!program) return;
+    setWeek(next);
+    setEditingId(null);
+    await openProgram(program.id, next);
+  }
 
   // Re-sync when the tab regains focus, so a workout logged on the phone shows
   // up on the computer without a manual reload.
@@ -67,7 +155,18 @@ export default function AppShell({ userEmail }: { userEmail: string }) {
     setView("Workout");
   }
 
-  const shared = { state, day, setDay, refresh, startRest, setView, setError };
+  const shared = {
+    state,
+    day,
+    setDay,
+    refresh: () => refresh(),
+    startRest,
+    setView,
+    setError,
+    program: program as ActiveProgram,
+    programs,
+    onProgramsChanged: reloadPrograms,
+  };
 
   return (
     <>
@@ -102,11 +201,19 @@ export default function AppShell({ userEmail }: { userEmail: string }) {
 
         {error ? <div className="notice error">{error}</div> : null}
 
-        {loading ? (
+        {loading || !program ? (
           <div className="card muted">Loading your training data…</div>
         ) : (
           <>
-            <LegacyImportBanner state={state} refresh={refresh} />
+            <ProgramPicker
+              programs={programs}
+              program={program}
+              week={week}
+              onSwitch={switchProgram}
+              onWeekChange={changeWeek}
+            />
+
+            <LegacyImportBanner state={state} refresh={() => refresh()} programId={program.id} />
 
             {view === "Dashboard" ? (
               <Dashboard {...shared} onStartWorkout={(d) => goToWorkout(d)} />
@@ -114,7 +221,7 @@ export default function AppShell({ userEmail }: { userEmail: string }) {
 
             {view === "Workout" ? (
               <WorkoutView
-                key={`${day}:${editingId ?? "new"}`}
+                key={`${program.id}:${program.week}:${day}:${editingId ?? "new"}`}
                 {...shared}
                 editingId={editingId}
                 setEditingId={setEditingId}
@@ -130,8 +237,8 @@ export default function AppShell({ userEmail }: { userEmail: string }) {
               <HistoryView {...shared} onEdit={(d, id) => goToWorkout(d, id)} />
             ) : null}
 
-            {view === "Progress" ? <ProgressView state={state} /> : null}
-            {view === "PRs" ? <PRsView state={state} /> : null}
+            {view === "Progress" ? <ProgressView state={state} program={program} /> : null}
+            {view === "PRs" ? <PRsView state={state} program={program} /> : null}
             {view === "Settings" ? <SettingsView {...shared} /> : null}
           </>
         )}
@@ -151,4 +258,7 @@ export interface SharedViewProps {
   startRest: (seconds: number) => void;
   setView: (view: ViewName) => void;
   setError: (error: string | null) => void;
+  program: ActiveProgram;
+  programs: ProgramSummary[];
+  onProgramsChanged: () => Promise<void>;
 }

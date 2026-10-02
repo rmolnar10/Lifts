@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { DAYS, PROGRAM, UNWEIGHTED_TYPES, type Exercise } from "@/lib/program";
+import { UNWEIGHTED_TYPES, type Exercise } from "@/lib/program";
+import { exercisesForDay, targetRirLabel } from "@/lib/activeProgram";
 import { previousPerformance, suggest } from "@/lib/progression";
 import { saveWorkout, type ExercisePayload } from "@/lib/data";
 import { retiredExercisePayloads } from "@/lib/retired";
@@ -32,6 +33,11 @@ interface ExerciseForm {
 
 const takesWeight = (exercise: Exercise) => !UNWEIGHTED_TYPES.includes(exercise.type);
 
+/** A blank form, used if an exercise somehow has no entry yet. */
+function emptyForm(exercise: Exercise): ExerciseForm {
+  return { weight: "", rir: "", reps: Array.from({ length: exercise.sets }, () => "") };
+}
+
 function initialForm(
   exercise: Exercise,
   previous: LoggedExercise | null,
@@ -60,13 +66,14 @@ export default function WorkoutView({
   setEditingId,
   onDone,
   account,
+  program,
 }: Props) {
   const { workouts, starts } = state;
   const editing = editingId ? (workouts.find((w) => w.id === editingId) ?? null) : null;
 
   // A draft from a previous visit to this screen wins over the computed
   // defaults — that is the whole point of it.
-  const [restored] = useState<WorkoutDraft | null>(() => readDraft(account, day, editingId));
+  const [restored] = useState<WorkoutDraft | null>(() => readDraft(account, program, day, editingId));
 
   /**
    * The inputs as they look with no draft: last session's performance when
@@ -74,7 +81,7 @@ export default function WorkoutView({
    */
   const computeDefaults = useCallback((): Record<string, ExerciseForm> => {
     const defaults: Record<string, ExerciseForm> = {};
-    for (const exercise of PROGRAM[day]) {
+    for (const exercise of exercisesForDay(program, day)) {
       const previous = editing
         ? (editing.exercises[exercise.id] ?? null)
         : previousPerformance(workouts, day, exercise.id);
@@ -82,7 +89,7 @@ export default function WorkoutView({
       defaults[exercise.id] = initialForm(exercise, previous, suggestion.weight);
     }
     return defaults;
-  }, [day, editing, workouts, starts]);
+  }, [day, editing, workouts, starts, program]);
 
   const [forms, setForms] = useState<Record<string, ExerciseForm>>(() => {
     const defaults = computeDefaults();
@@ -105,40 +112,44 @@ export default function WorkoutView({
 
   useEffect(() => {
     if (!dirty.current) return;
-    writeDraft(account, editingId, {
+    writeDraft(account, program.id, editingId, {
       savedAt: new Date().toISOString(),
       day,
       forms,
       notes,
     });
-  }, [account, day, editingId, forms, notes]);
+  }, [account, program.id, day, editingId, forms, notes]);
 
   /** Drops the stored draft. `reset` also puts the visible inputs back to their
    *  defaults, which is what "Start fresh" means to someone looking at them. */
   const discardDraft = useCallback(
     (reset = false) => {
       dirty.current = false;
-      clearDraft(account, day, editingId);
+      clearDraft(account, program.id, day, editingId);
       setDraftRestored(false);
       if (reset) {
         setForms(computeDefaults());
         setNotes(editing?.notes ?? "");
       }
     },
-    [account, day, editingId, computeDefaults, editing],
+    [account, program.id, day, editingId, computeDefaults, editing],
   );
 
   function update(exerciseId: string, patch: Partial<ExerciseForm>) {
     markDirty();
-    setForms((current) => ({ ...current, [exerciseId]: { ...current[exerciseId], ...patch } }));
+    setForms((current) => ({
+      ...current,
+      [exerciseId]: { ...(current[exerciseId] ?? { weight: "", rir: "", reps: [] }), ...patch },
+    }));
   }
 
   function updateRep(exerciseId: string, index: number, value: string) {
     markDirty();
     setForms((current) => {
-      const reps = current[exerciseId].reps.slice();
+      const existing = current[exerciseId] ?? { weight: "", rir: "", reps: [] };
+      const reps = existing.reps.slice();
       reps[index] = value;
-      return { ...current, [exerciseId]: { ...current[exerciseId], reps } };
+      return { ...current, [exerciseId]: { ...existing, reps } };
     });
   }
 
@@ -147,8 +158,8 @@ export default function WorkoutView({
     setSaving(true);
     setError(null);
 
-    const exercises: ExercisePayload[] = PROGRAM[day].map((exercise) => {
-      const form = forms[exercise.id];
+    const exercises: ExercisePayload[] = exercisesForDay(program, day).map((exercise) => {
+      const form = forms[exercise.id] ?? emptyForm(exercise);
       return {
         exercise_id: exercise.id,
         name: exercise.name,
@@ -160,7 +171,7 @@ export default function WorkoutView({
     });
 
     // Carry through anything logged under an earlier version of the program.
-    exercises.push(...retiredExercisePayloads(day, editing));
+    exercises.push(...retiredExercisePayloads(day, editing, program));
 
     try {
       await saveWorkout({
@@ -169,6 +180,8 @@ export default function WorkoutView({
         performedAt: null, // New workouts default to now; edits keep their date.
         notes,
         exercises,
+        programId: program.id,
+        weekNumber: program.hasWeeks ? program.week : null,
       });
       discardDraft();
       await refresh();
@@ -193,7 +206,7 @@ export default function WorkoutView({
   return (
     <>
       <div className="tabs">
-        {DAYS.map((d) => (
+        {program.dayOrder.map((d) => (
           <button
             key={d}
             className={d === day ? "active" : ""}
@@ -234,24 +247,44 @@ export default function WorkoutView({
         </div>
       </div>
 
-      {PROGRAM[day].map((exercise, index) => {
+      {exercisesForDay(program, day).map((exercise, index) => {
         const suggestion = suggest(exercise, day, workouts, starts);
-        const form = forms[exercise.id];
+        const form = forms[exercise.id] ?? emptyForm(exercise);
         return (
           <div className="card" key={exercise.id}>
             <div className="exercise-head">
               <div>
                 <h3>
-                  {index + 1}. {exercise.name}
+                  {exercise.supersetGroup ? `${exercise.supersetGroup}: ` : `${index + 1}. `}
+                  {exercise.name}
                 </h3>
-                <span className="badge">
-                  {exercise.sets} ×{" "}
-                  {exercise.min ? `${exercise.min}–${exercise.max}` : "near failure"}{" "}
-                  {exercise.type === "timed" ? "sec" : "reps"}
-                </span>
+                <div className="badges">
+                  <span className="badge">
+                    {exercise.sets} ×{" "}
+                    {exercise.min ? `${exercise.min}–${exercise.max}` : "near failure"}{" "}
+                    {exercise.type === "timed" ? "sec" : "reps"}
+                    {exercise.perSide ? " per side" : ""}
+                  </span>
+                  {targetRirLabel(exercise) ? (
+                    <span className="badge">{targetRirLabel(exercise)}</span>
+                  ) : null}
+                  {exercise.dropset ? <span className="badge warn-badge">Dropset</span> : null}
+                  {exercise.supersetGroup ? (
+                    <span className="badge">Superset</span>
+                  ) : null}
+                </div>
               </div>
-              <button onClick={() => startRest(exercise.rest)}>Rest</button>
+              <button onClick={() => startRest(exercise.rest)}>
+                {exercise.rest ? "Rest" : "No rest"}
+              </button>
             </div>
+
+            {exercise.dropset ? (
+              <p className="muted small" style={{ marginTop: 8 }}>
+                Hit the rep target, cut the load by about half, then keep going to failure.
+                Log the reps from the first part of the set.
+              </p>
+            ) : null}
 
             {!editing ? (
               <div className="target">
@@ -276,7 +309,10 @@ export default function WorkoutView({
                 </div>
               ) : null}
               <div>
-                <label htmlFor={`rir-${exercise.id}`}>RIR after final set</label>
+                <label htmlFor={`rir-${exercise.id}`}>
+                  RIR after final set
+                  {targetRirLabel(exercise) ? ` — aim for ${targetRirLabel(exercise)}` : ""}
+                </label>
                 <input
                   id={`rir-${exercise.id}`}
                   type="number"

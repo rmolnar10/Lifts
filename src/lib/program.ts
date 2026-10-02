@@ -30,6 +30,19 @@ export interface Exercise {
   inc: number;
   reset: number;
   rest: number;
+
+  // Only data-backed programs carry these; the built-in program leaves them
+  // undefined, which keeps it byte-identical to V4 for the parity harness.
+  /** Target effort for the final set as RPE, where 10 is 0 reps in reserve. */
+  targetRpe?: [number, number];
+  /** Finish the set, cut the load by about half, and keep going. */
+  dropset?: boolean;
+  /** "A1"/"A2" pair into a superset; undefined means a straight set. */
+  supersetGroup?: string | null;
+  /** Reps are per limb rather than per set. */
+  perSide?: boolean;
+  /** Warm-up sets the program suggests, as written (e.g. "2-3"). */
+  warmupSets?: string | null;
 }
 
 export type Program = Record<string, Exercise[]>;

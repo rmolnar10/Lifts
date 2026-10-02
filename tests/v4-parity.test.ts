@@ -25,6 +25,7 @@ import { PROGRAM, type Exercise } from "@/lib/program";
 import { previousPerformance, suggest } from "@/lib/progression";
 import { calcPRs, totalVolume } from "@/lib/stats";
 import type { StartingWeights, Workout } from "@/lib/types";
+import { builtinActiveProgram } from "./helpers";
 
 interface V4Suggestion {
   t: string;
@@ -242,7 +243,7 @@ describe("V4 engine parity", () => {
       });
 
       v4.setScenario({ starts: {}, workouts }, Object.keys(PROGRAM)[0]);
-      expect(calcPRs(workouts)).toEqual(v4.calcPRs());
+      expect(calcPRs(workouts, builtinActiveProgram())).toEqual(v4.calcPRs());
 
       const v4Volume = workouts.reduce(
         (a, w) =>

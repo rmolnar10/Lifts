@@ -6,6 +6,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it } from "vitest";
 import { writeDraft, type WorkoutDraft } from "@/lib/draft";
+import { builtinActiveProgram } from "./helpers";
 import { PROGRAM } from "@/lib/program";
 import Dashboard from "@/components/views/Dashboard";
 import WorkoutView from "@/components/views/WorkoutView";
@@ -45,7 +46,14 @@ const state: AppState = {
   workouts,
 };
 
+const PROG = builtinActiveProgram();
+
 const shared = {
+  program: PROG,
+  programs: [
+    { id: PROG.id, slug: PROG.slug, name: PROG.name, notes: "", weeks: null },
+  ],
+  onProgramsChanged: async () => undefined,
   state,
   day: HEAVY,
   setDay: () => undefined,
@@ -118,7 +126,7 @@ describe("view rendering", () => {
   });
 
   it("progress shows the load trend and estimated 1RM", () => {
-    const html = renderToStaticMarkup(<ProgressView state={state} />);
+    const html = renderToStaticMarkup(<ProgressView state={state} program={PROG} />);
     expect(html).toContain("load trend");
     expect(html).toContain("Est. 1RM");
     expect(html).toContain("Bench Press");
@@ -127,7 +135,7 @@ describe("view rendering", () => {
   });
 
   it("PRs list load and rep records", () => {
-    const html = renderToStaticMarkup(<PRsView state={state} />);
+    const html = renderToStaticMarkup(<PRsView state={state} program={PROG} />);
     expect(html).toContain("Personal records");
     expect(html).toContain("140 lb");
     expect(html).toContain("Load PR");
@@ -156,7 +164,7 @@ describe("view rendering", () => {
         reps: Array.from({ length: exercise.sets }, () => "11"),
       };
     }
-    writeDraft("test@example.com", null, {
+    writeDraft("test@example.com", PROG.id, null, {
       savedAt: new Date().toISOString(),
       day: HEAVY,
       forms,
@@ -205,8 +213,8 @@ describe("view rendering", () => {
     expect(renderToStaticMarkup(<HistoryView {...base} onEdit={() => undefined} />)).toContain(
       "No workouts yet.",
     );
-    expect(renderToStaticMarkup(<ProgressView state={empty} />)).toContain("No history yet.");
-    expect(renderToStaticMarkup(<PRsView state={empty} />)).toContain(
+    expect(renderToStaticMarkup(<ProgressView state={empty} program={PROG} />)).toContain("No history yet.");
+    expect(renderToStaticMarkup(<PRsView state={empty} program={PROG} />)).toContain(
       "Complete workouts to create PRs.",
     );
     expect(

@@ -139,6 +139,22 @@ function readBody(req) {
   });
 }
 
+/** PostgREST `?col=eq.value` filters. */
+function filters(url) {
+  const out = {};
+  for (const [k, v] of url.searchParams) {
+    if (k === "select" || k === "order") continue;
+    const m = /^eq\.(.*)$/.exec(v);
+    if (m) out[k] = m[1];
+  }
+  return out;
+}
+
+/** `.single()` asks for one object rather than an array. */
+function wantsSingle(req) {
+  return String(req.headers.accept ?? "").includes("vnd.pgrst.object");
+}
+
 function bearer(req) {
   const header = req.headers.authorization ?? "";
   const token = header.startsWith("Bearer ") ? header.slice(7) : "";
@@ -213,6 +229,25 @@ async function handleAuth(req, res, url) {
 
 // --- PostgREST subset -------------------------------------------------------
 
+const PROGRAM_SQL = `
+  select json_build_object(
+    'id', p.id, 'slug', p.slug, 'name', p.name, 'notes', p.notes, 'weeks', p.weeks,
+    'program_blocks', coalesce((
+      select json_agg(json_build_object(
+        'name', b.name, 'position', b.position,
+        'week_start', b.week_start, 'week_end', b.week_end,
+        'program_exercises', coalesce((
+          select json_agg(to_jsonb(e) - 'id' - 'block_id')
+          from public.program_exercises e where e.block_id = b.id
+        ), '[]'::json)
+      ) order by b.position)
+      from public.program_blocks b where b.program_id = p.id
+    ), '[]'::json)
+  ) as data
+  from public.programs p
+  where p.id = $1
+`;
+
 const WORKOUTS_SQL = `
   select coalesce(json_agg(w order by w.performed_at, w.created_at), '[]'::json) as data
   from (
@@ -244,7 +279,15 @@ async function handleRest(req, res, url) {
 
   if (table.startsWith("rpc/")) {
     const fn = table.slice(4);
-    const allowed = ["save_workout", "save_starting_weights", "import_backup", "delete_all_data"];
+    const allowed = [
+      "save_workout",
+      "save_starting_weights",
+      "import_backup",
+      "delete_all_data",
+      "import_program",
+      "set_active_program",
+      "adopt_orphan_history",
+    ];
     if (!allowed.includes(fn)) {
       return send(res, 501, { message: `QA stub: unknown rpc ${fn}` });
     }
@@ -265,22 +308,52 @@ async function handleRest(req, res, url) {
     }
   }
 
+  const where = filters(url);
+
   try {
     if (table === "workouts" && req.method === "GET") {
-      const result = await asUser(userId, (c) => c.query(WORKOUTS_SQL));
+      const sql = where.program_id
+        ? WORKOUTS_SQL.replace("from public.workouts w", "from public.workouts w where w.program_id = $1")
+        : WORKOUTS_SQL;
+      const result = await asUser(userId, (c) =>
+        c.query(sql, where.program_id ? [where.program_id] : []),
+      );
       return send(res, 200, result.rows[0].data);
     }
 
     if (table === "user_exercise_settings" && req.method === "GET") {
       const result = await asUser(userId, (c) =>
-        c.query("select day, exercise_id, starting_weight from public.user_exercise_settings"),
+        where.program_id
+          ? c.query(
+              "select day, exercise_id, starting_weight from public.user_exercise_settings where program_id = $1",
+              [where.program_id],
+            )
+          : c.query("select day, exercise_id, starting_weight from public.user_exercise_settings"),
       );
       return send(res, 200, result.rows);
     }
 
+    if (table === "programs" && req.method === "GET") {
+      if (where.id) {
+        const result = await asUser(userId, (c) => c.query(PROGRAM_SQL, [where.id]));
+        const row = result.rows[0]?.data ?? null;
+        return send(res, 200, wantsSingle(req) ? row : row ? [row] : []);
+      }
+      const result = await asUser(userId, (c) =>
+        c.query("select id, slug, name, notes, weeks from public.programs order by created_at"),
+      );
+      return send(res, 200, wantsSingle(req) ? (result.rows[0] ?? null) : result.rows);
+    }
+
+    if (table === "profiles" && req.method === "GET") {
+      const result = await asUser(userId, (c) =>
+        c.query("select id, active_program_id from public.profiles"),
+      );
+      return send(res, 200, wantsSingle(req) ? (result.rows[0] ?? null) : result.rows);
+    }
+
     if (table === "workouts" && req.method === "DELETE") {
-      const id = (url.searchParams.get("id") ?? "").replace(/^eq\./, "");
-      await asUser(userId, (c) => c.query("delete from public.workouts where id = $1", [id]));
+      await asUser(userId, (c) => c.query("delete from public.workouts where id = $1", [where.id]));
       return send(res, 204);
     }
   } catch (error) {

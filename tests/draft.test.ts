@@ -9,6 +9,7 @@ import {
   type WorkoutDraft,
 } from "@/lib/draft";
 import { PROGRAM } from "@/lib/program";
+import { builtinActiveProgram } from "./helpers";
 
 /** Minimal in-memory localStorage so the module under test behaves as in a browser. */
 class MemoryStorage implements Storage {
@@ -35,6 +36,7 @@ class MemoryStorage implements Storage {
 
 const HEAVY = "Heavy Upper";
 const ACCOUNT = "lifter@example.com";
+const PROG = builtinActiveProgram();
 
 function fullDraft(overrides: Partial<WorkoutDraft> = {}): WorkoutDraft {
   const forms: WorkoutDraft["forms"] = {};
@@ -60,86 +62,86 @@ beforeEach(() => {
 describe("draft round-trip", () => {
   it("saves and restores an in-progress workout", () => {
     const draft = fullDraft({ notes: "felt heavy" });
-    writeDraft(ACCOUNT, null, draft);
+    writeDraft(ACCOUNT, PROG.id, null, draft);
 
-    const restored = readDraft(ACCOUNT, HEAVY, null);
+    const restored = readDraft(ACCOUNT, PROG, HEAVY, null);
     expect(restored).not.toBeNull();
     expect(restored?.notes).toBe("felt heavy");
     expect(restored?.forms.bench.reps).toEqual(["8", "8", "8", "8"]);
   });
 
   it("returns null when nothing was saved", () => {
-    expect(readDraft(ACCOUNT, HEAVY, null)).toBeNull();
+    expect(readDraft(ACCOUNT, PROG, HEAVY, null)).toBeNull();
   });
 
   it("clears a draft on demand", () => {
-    writeDraft(ACCOUNT, null, fullDraft());
-    clearDraft(ACCOUNT, HEAVY, null);
-    expect(readDraft(ACCOUNT, HEAVY, null)).toBeNull();
+    writeDraft(ACCOUNT, PROG.id, null, fullDraft());
+    clearDraft(ACCOUNT, PROG.id, HEAVY, null);
+    expect(readDraft(ACCOUNT, PROG, HEAVY, null)).toBeNull();
   });
 });
 
 describe("draft isolation", () => {
   it("keeps drafts separate per day", () => {
-    writeDraft(ACCOUNT, null, fullDraft({ notes: "heavy day" }));
-    expect(readDraft(ACCOUNT, "Legs + Abs", null)).toBeNull();
-    expect(readDraft(ACCOUNT, HEAVY, null)?.notes).toBe("heavy day");
+    writeDraft(ACCOUNT, PROG.id, null, fullDraft({ notes: "heavy day" }));
+    expect(readDraft(ACCOUNT, PROG, "Legs + Abs", null)).toBeNull();
+    expect(readDraft(ACCOUNT, PROG, HEAVY, null)?.notes).toBe("heavy day");
   });
 
   it("keeps drafts separate per account", () => {
-    writeDraft(ACCOUNT, null, fullDraft({ notes: "mine" }));
-    expect(readDraft("someone@else.com", HEAVY, null)).toBeNull();
+    writeDraft(ACCOUNT, PROG.id, null, fullDraft({ notes: "mine" }));
+    expect(readDraft("someone@else.com", PROG, HEAVY, null)).toBeNull();
   });
 
   it("keeps a new workout separate from an edit of a saved one", () => {
-    writeDraft(ACCOUNT, null, fullDraft({ notes: "new session" }));
-    writeDraft(ACCOUNT, "w1", fullDraft({ notes: "editing w1" }));
+    writeDraft(ACCOUNT, PROG.id, null, fullDraft({ notes: "new session" }));
+    writeDraft(ACCOUNT, PROG.id, "w1", fullDraft({ notes: "editing w1" }));
 
-    expect(readDraft(ACCOUNT, HEAVY, null)?.notes).toBe("new session");
-    expect(readDraft(ACCOUNT, HEAVY, "w1")?.notes).toBe("editing w1");
+    expect(readDraft(ACCOUNT, PROG, HEAVY, null)?.notes).toBe("new session");
+    expect(readDraft(ACCOUNT, PROG, HEAVY, "w1")?.notes).toBe("editing w1");
   });
 
   it("builds distinct keys", () => {
-    expect(draftKey(ACCOUNT, HEAVY, null)).not.toBe(draftKey(ACCOUNT, HEAVY, "w1"));
-    expect(draftKey(ACCOUNT, HEAVY, null)).not.toBe(draftKey(ACCOUNT, "Legs + Abs", null));
+    expect(draftKey(ACCOUNT, PROG.id, HEAVY, null)).not.toBe(draftKey(ACCOUNT, PROG.id, HEAVY, "w1"));
+    expect(draftKey(ACCOUNT, PROG.id, HEAVY, null)).not.toBe(draftKey(ACCOUNT, PROG.id, "Legs + Abs", null));
   });
 });
 
 describe("draft rejection", () => {
   it("discards a draft older than the maximum age", () => {
     const old = new Date(Date.now() - DRAFT_MAX_AGE_MS - 1000).toISOString();
-    writeDraft(ACCOUNT, null, fullDraft({ savedAt: old }));
-    expect(readDraft(ACCOUNT, HEAVY, null)).toBeNull();
+    writeDraft(ACCOUNT, PROG.id, null, fullDraft({ savedAt: old }));
+    expect(readDraft(ACCOUNT, PROG, HEAVY, null)).toBeNull();
   });
 
   it("keeps a draft that is still within the maximum age", () => {
     const recent = new Date(Date.now() - DRAFT_MAX_AGE_MS + 60_000).toISOString();
-    writeDraft(ACCOUNT, null, fullDraft({ savedAt: recent }));
-    expect(readDraft(ACCOUNT, HEAVY, null)).not.toBeNull();
+    writeDraft(ACCOUNT, PROG.id, null, fullDraft({ savedAt: recent }));
+    expect(readDraft(ACCOUNT, PROG, HEAVY, null)).not.toBeNull();
   });
 
   it("discards a draft whose set count no longer matches the program", () => {
     const draft = fullDraft();
     draft.forms.bench.reps = ["8", "8"]; // bench is 4 sets
-    writeDraft(ACCOUNT, null, draft);
-    expect(readDraft(ACCOUNT, HEAVY, null)).toBeNull();
+    writeDraft(ACCOUNT, PROG.id, null, draft);
+    expect(readDraft(ACCOUNT, PROG, HEAVY, null)).toBeNull();
   });
 
   it("discards a draft that is missing an exercise", () => {
     const draft = fullDraft();
     delete draft.forms.curl;
-    writeDraft(ACCOUNT, null, draft);
-    expect(readDraft(ACCOUNT, HEAVY, null)).toBeNull();
+    writeDraft(ACCOUNT, PROG.id, null, draft);
+    expect(readDraft(ACCOUNT, PROG, HEAVY, null)).toBeNull();
   });
 
   it("discards corrupt JSON without throwing", () => {
-    window.localStorage.setItem(draftKey(ACCOUNT, HEAVY, null), "{not json");
-    expect(readDraft(ACCOUNT, HEAVY, null)).toBeNull();
+    window.localStorage.setItem(draftKey(ACCOUNT, PROG.id, HEAVY, null), "{not json");
+    expect(readDraft(ACCOUNT, PROG, HEAVY, null)).toBeNull();
   });
 
   it("discards a draft with an unparseable timestamp", () => {
-    writeDraft(ACCOUNT, null, fullDraft({ savedAt: "not a date" }));
-    expect(readDraft(ACCOUNT, HEAVY, null)).toBeNull();
+    writeDraft(ACCOUNT, PROG.id, null, fullDraft({ savedAt: "not a date" }));
+    expect(readDraft(ACCOUNT, PROG, HEAVY, null)).toBeNull();
   });
 });
 
@@ -155,9 +157,9 @@ describe("storage unavailable", () => {
       writable: true,
     });
 
-    expect(() => writeDraft(ACCOUNT, null, fullDraft())).not.toThrow();
-    expect(readDraft(ACCOUNT, HEAVY, null)).toBeNull();
-    expect(() => clearDraft(ACCOUNT, HEAVY, null)).not.toThrow();
+    expect(() => writeDraft(ACCOUNT, PROG.id, null, fullDraft())).not.toThrow();
+    expect(readDraft(ACCOUNT, PROG, HEAVY, null)).toBeNull();
+    expect(() => clearDraft(ACCOUNT, PROG.id, HEAVY, null)).not.toThrow();
   });
 });
 
