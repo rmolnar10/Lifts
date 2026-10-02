@@ -6,7 +6,7 @@
  * renders the built-in plan and any imported one.
  */
 
-import type { Exercise } from "./program";
+import { PROGRAM, type Exercise } from "./program";
 
 export interface ActiveProgram {
   id: string;
@@ -22,6 +22,28 @@ export interface ActiveProgram {
   hasWeeks: boolean;
   dayOrder: string[];
   days: Record<string, Exercise[]>;
+}
+
+/**
+ * Stands in for a program id before the programs migration has been applied.
+ * In this mode the app reads the hardcoded program and queries exactly as it
+ * did before programs existed, so a deploy cannot outrun its migration.
+ */
+export const LEGACY_PROGRAM_ID = "__legacy__";
+
+/** The hardcoded program, for use in legacy mode. */
+export function legacyProgram(): ActiveProgram {
+  return {
+    id: LEGACY_PROGRAM_ID,
+    slug: "lifts-3day",
+    name: "Lifts 3-Day",
+    weeks: null,
+    week: 1,
+    blockName: "",
+    hasWeeks: false,
+    dayOrder: Object.keys(PROGRAM),
+    days: PROGRAM,
+  };
 }
 
 export function exercisesForDay(program: ActiveProgram, day: string): Exercise[] {

@@ -6,12 +6,13 @@ import { EMPTY_STATE, type AppState } from "@/lib/types";
 import {
   blockForWeek,
   ensurePrograms,
+  isMissingProgramsSchema,
   listPrograms,
   loadProgram,
   setActiveProgram,
   type ProgramSummary,
 } from "@/lib/programs";
-import { defaultDay, type ActiveProgram } from "@/lib/activeProgram";
+import { defaultDay, legacyProgram, type ActiveProgram } from "@/lib/activeProgram";
 import ProgramPicker from "@/components/ProgramPicker";
 import Dashboard from "@/components/views/Dashboard";
 import WorkoutView from "@/components/views/WorkoutView";
@@ -86,7 +87,26 @@ export default function AppShell({ userEmail }: { userEmail: string }) {
         await openProgram(activeId, 1);
         if (!cancelled) await loadState(activeId).then(setState);
       } catch (e) {
-        if (!cancelled) {
+        if (cancelled) return;
+        if (isMissingProgramsSchema(e)) {
+          // The programs migration has not been applied to this project yet.
+          // Fall back to the built-in program and the pre-programs queries so
+          // the app keeps working rather than showing an error.
+          const fallback = legacyProgram();
+          setPrograms([]);
+          setProgram(fallback);
+          setDay(defaultDay(fallback));
+          try {
+            setState(await loadState(fallback.id));
+            setError(null);
+          } catch (loadError) {
+            setError(
+              loadError instanceof Error
+                ? `Could not load your data: ${loadError.message}`
+                : "Could not load your data.",
+            );
+          }
+        } else {
           setError(
             e instanceof Error
               ? `Could not load your programs: ${e.message}`

@@ -10,6 +10,7 @@ import { getSupabaseBrowserClient } from "./supabase/client";
 import { startKey } from "./program";
 import type { AppState, LoggedExercise, StartingWeights, Workout } from "./types";
 import type { Unit } from "./program";
+import { LEGACY_PROGRAM_ID } from "./activeProgram";
 
 interface WorkoutSetRow {
   set_number: number;
@@ -79,21 +80,29 @@ function rowToWorkout(row: WorkoutRow): Workout {
 export async function loadState(programId: string): Promise<AppState> {
   const supabase = getSupabaseBrowserClient();
 
+  // Before the programs migration lands there is nothing to scope by, so query
+  // exactly as the app did previously.
+  const legacy = programId === LEGACY_PROGRAM_ID;
+
+  let workoutQuery = supabase
+    .from("workouts")
+    .select(
+      "id, day, performed_at, created_at, notes, " +
+        "workout_exercises (exercise_id, name, weight, unit, rir, position, " +
+        "workout_sets (set_number, reps))",
+    );
+  if (!legacy) workoutQuery = workoutQuery.eq("program_id", programId);
+
+  let settingsQuery = supabase
+    .from("user_exercise_settings")
+    .select("day, exercise_id, starting_weight");
+  if (!legacy) settingsQuery = settingsQuery.eq("program_id", programId);
+
   const [workoutsResult, settingsResult] = await Promise.all([
-    supabase
-      .from("workouts")
-      .select(
-        "id, day, performed_at, created_at, notes, " +
-          "workout_exercises (exercise_id, name, weight, unit, rir, position, " +
-          "workout_sets (set_number, reps))",
-      )
-      .eq("program_id", programId)
+    workoutQuery
       .order("performed_at", { ascending: true })
       .order("created_at", { ascending: true }),
-    supabase
-      .from("user_exercise_settings")
-      .select("day, exercise_id, starting_weight")
-      .eq("program_id", programId),
+    settingsQuery,
   ]);
 
   if (workoutsResult.error) throw workoutsResult.error;
@@ -130,8 +139,11 @@ export async function saveWorkout(params: {
     p_performed_at: params.performedAt,
     p_notes: params.notes,
     p_exercises: params.exercises,
-    p_program_id: params.programId,
-    p_week_number: params.weekNumber,
+    // Omitted entirely in legacy mode so the pre-programs function signature
+    // still matches.
+    ...(params.programId === LEGACY_PROGRAM_ID
+      ? {}
+      : { p_program_id: params.programId, p_week_number: params.weekNumber }),
   });
   if (error) throw error;
   return data as string;
@@ -159,7 +171,7 @@ export async function saveStartingWeights(
   });
   const { error } = await supabase.rpc("save_starting_weights", {
     p_starts: payload,
-    p_program_id: programId,
+    ...(programId === LEGACY_PROGRAM_ID ? {} : { p_program_id: programId }),
   });
   if (error) throw error;
 }
@@ -194,7 +206,7 @@ export async function importBackup(state: AppState, programId: string): Promise<
   const { data, error } = await supabase.rpc("import_backup", {
     p_starts: starts,
     p_workouts: workouts,
-    p_program_id: programId,
+    ...(programId === LEGACY_PROGRAM_ID ? {} : { p_program_id: programId }),
   });
   if (error) throw error;
   return Number(data ?? 0);
@@ -203,7 +215,10 @@ export async function importBackup(state: AppState, programId: string): Promise<
 /** Deletes every workout and starting weight belonging to one program. */
 export async function deleteAllData(programId: string): Promise<void> {
   const supabase = getSupabaseBrowserClient();
-  const { error } = await supabase.rpc("delete_all_data", { p_program_id: programId });
+  const { error } = await supabase.rpc(
+    "delete_all_data",
+    programId === LEGACY_PROGRAM_ID ? {} : { p_program_id: programId },
+  );
   if (error) throw error;
 }
 

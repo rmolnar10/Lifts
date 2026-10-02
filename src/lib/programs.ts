@@ -187,6 +187,9 @@ export async function ensurePrograms(): Promise<{
   programs: ProgramSummary[];
   activeId: string;
 }> {
+  // Throws `isMissingProgramsSchema` when the migration has not been applied;
+  // the caller falls back to the built-in program so a deploy that lands ahead
+  // of its migration degrades instead of breaking.
   let programs = await listPrograms();
 
   let builtin = programs.find((p) => p.slug === BUILTIN_PROGRAM_SLUG);
@@ -205,4 +208,21 @@ export async function ensurePrograms(): Promise<{
   }
 
   return { programs, activeId };
+}
+
+/**
+ * True when the error means the programs schema has not been applied yet:
+ * a missing table (42P01), a missing function (42883), or PostgREST failing to
+ * find the RPC in its schema cache (PGRST202).
+ */
+export function isMissingProgramsSchema(error: unknown): boolean {
+  const code = (error as { code?: string } | null)?.code ?? "";
+  const message = String((error as { message?: string } | null)?.message ?? "");
+  return (
+    code === "42P01" ||
+    code === "42883" ||
+    code === "PGRST202" ||
+    /relation "?(public\.)?programs"? does not exist/i.test(message) ||
+    /could not find the function/i.test(message)
+  );
 }
