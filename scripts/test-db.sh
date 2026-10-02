@@ -50,4 +50,7 @@ for f in "$ROOT"/supabase/migrations/*.sql; do
 done
 
 echo "==> running RLS + RPC tests"
-psql -h "$PGSOCK" -p "$PGPORT" -U postgres -v ON_ERROR_STOP=1 -q -f "$ROOT/supabase/tests/01_rls_test.sql"
+for f in "$ROOT"/supabase/tests/[0-9][0-9]_*_test.sql; do
+  echo "    $(basename "$f")"
+  psql -h "$PGSOCK" -p "$PGPORT" -U postgres -v ON_ERROR_STOP=1 -q -f "$f"
+done
