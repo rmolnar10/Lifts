@@ -50,9 +50,26 @@ All green as of the last commit.
 > Changing one requires a **redeploy**, not a restart. This has already caused
 > one round of confusion — see *Outstanding* for the hardening fix.
 
+## Migration state (live project)
+
+`0003_programs.sql` is applied. **`0004_program_rpcs.sql` and
+`0005_scoped_reset.sql` are NOT**, so the app is running in its legacy fallback:
+it reads the built-in program and queries as it did before programs existed.
+Multi-program support switches on as soon as those two files are applied.
+
+Apply them by pasting each into the Supabase SQL editor, in order.
+
+> **The Supabase MCP connector cannot apply them.** Any SQL whose text contains
+> `DROP` or `DELETE` — including inside a function body — hangs the connector
+> until its 60s timeout, apparently behind a destructive-statement confirmation
+> that never arrives. Plain `CREATE`/`ALTER` goes through fine. Read queries are
+> unaffected. Do not burn time retrying; use the SQL editor.
+
 ## Outstanding
 
-1. **Delete the stale `claude/lifts-v5-supabase-vercel-3iwa63` remote branch.**
+1. **Apply `0004_program_rpcs.sql` and `0005_scoped_reset.sql`** (see above),
+   then import the Essentials program JSON via Settings → Import a program.
+2. **Delete the stale `claude/lifts-v5-supabase-vercel-3iwa63` remote branch.**
    It holds nothing `main` does not. The session's GitHub proxy only allows
    pushes to the current working branch, so `git push --delete` is refused and a
    session cannot remove it — do it from the repo's Branches page on GitHub.

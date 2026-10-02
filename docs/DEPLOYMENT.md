@@ -106,6 +106,18 @@ npm run build
 `scripts/test-db.sh` needs a local PostgreSQL 14+ install. It never touches your
 Supabase project.
 
+## Applying later migrations
+
+Migrations are **not** applied automatically by a deploy. Paste each new file in
+`supabase/migrations/` into the Supabase SQL editor, in filename order.
+
+The app tolerates a deploy landing ahead of its migration: if the programs
+schema is missing it falls back to the built-in program rather than failing, so
+there is no rush and no particular order between deploying and migrating.
+
+The Supabase MCP connector cannot apply migrations containing `DROP` or
+`DELETE`; use the SQL editor for those.
+
 ## Troubleshooting
 
 **"Supabase is not configured"** — the environment variables are missing from
