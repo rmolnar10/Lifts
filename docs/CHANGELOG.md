@@ -1,6 +1,28 @@
 # Changelog
 
 ## Post-V5 fixes
+- Progress tab rebuilt around "what do I change next" (2026-10-03):
+  - A "What to change next session" list naming every lift that is ready for
+    more load or has stalled, with the specific instruction for each: which set
+    is blocking, how many reps it is short, and whether a first set taken to
+    failure is the cause.
+  - A reps-per-set chart with the top of the rep range drawn in, so it is
+    visible that the engine raises load only once EVERY set clears that line.
+  - A load-over-time line, shown only when the load has actually moved.
+  - A short explainer of how the progression rule works.
+  - The exercise selector opens on the lift most in need of attention rather
+    than the first in the program.
+- Deload reminder every 7 workouts, on the Dashboard and the Workout view.
+  `DELOAD_EVERY_N_WORKOUTS` in src/lib/deload.ts is the only number to change.
+- Upper-body effort targets, dropsets and supersets:
+  - RPE 8-9 on compounds, 9-10 on isolation, shown as RIR on the exercise card.
+  - Dropset on the last set of both lateral raises, both triceps movements and
+    both curls.
+  - Triceps pushdown + machine curl, and hammer curl + overhead extension, are
+    now superset pairs (A1/A2) with no rest between them.
+  - Lower body is deliberately untouched.
+- Volume Upper returns to Hammer Curl 3x8-12 (its history reconnects), and
+  Heavy Upper's curl is renamed Machine Curl to match the equipment used.
 - Routine update (2026-10-03):
   - Heavy Upper pull-ups corrected from "Weighted Pull-Up" to a bodyweight
     "Pull-Up" at 4x5-10. They had always been done at bodyweight but logged as

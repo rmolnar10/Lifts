@@ -125,13 +125,29 @@ describe("view rendering", () => {
     expect(html.indexOf("1/12/2026")).toBeLessThan(html.indexOf("1/5/2026"));
   });
 
-  it("progress shows the load trend and estimated 1RM", () => {
+  it("progress shows the charts, the table and estimated 1RM", () => {
     const html = renderToStaticMarkup(<ProgressView state={state} program={PROG} />);
-    expect(html).toContain("load trend");
     expect(html).toContain("Est. 1RM");
     expect(html).toContain("Bench Press");
     // Epley on 140 x 8 -> 177
     expect(html).toContain("177");
+    // Both charts render, each labelled for screen readers.
+    expect(html).toContain("Reps per set for Bench Press");
+    expect(html).toContain("Working load for Bench Press");
+  });
+
+  it("progress tells you what to change next, not just what happened", () => {
+    const html = renderToStaticMarkup(<ProgressView state={state} program={PROG} />);
+    expect(html).toContain("What to change next session");
+    // 140 x 8/8/8/8 tops out the 5-8 range, so the next step is +5 lb.
+    expect(html).toContain("Go to 145 lb next session");
+    expect(html).toContain("Add load");
+  });
+
+  it("progress draws the rep-range line every set has to clear", () => {
+    const html = renderToStaticMarkup(<ProgressView state={state} program={PROG} />);
+    expect(html).toContain("every set must reach this to add load");
+    expect(html).toContain("until your next deload");
   });
 
   it("PRs list load and rep records", () => {

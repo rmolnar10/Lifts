@@ -3,6 +3,7 @@
 import { exercisesForDay } from "@/lib/activeProgram";
 import { suggest } from "@/lib/progression";
 import { calcPRs, totalVolume } from "@/lib/stats";
+import { deloadStatus } from "@/lib/deload";
 import type { SharedViewProps } from "@/components/AppShell";
 
 interface Props extends SharedViewProps {
@@ -13,9 +14,15 @@ export default function Dashboard({ state, day, setDay, program, onStartWorkout 
   const { workouts, starts } = state;
   const volume = totalVolume(workouts);
   const last = workouts.length ? workouts[workouts.length - 1] : null;
+  const deload = deloadStatus(workouts);
 
   return (
     <>
+      {deload.due ? (
+        <div className="notice warn">
+          <strong>Deload session.</strong> {deload.message}
+        </div>
+      ) : null}
       <div className="stats">
         <div className="stat">
           <div className="num">{workouts.length}</div>

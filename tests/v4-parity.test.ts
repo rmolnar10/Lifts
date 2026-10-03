@@ -128,24 +128,31 @@ function buildHistory(
  * by day then exercise id. Anything not listed here is drift and fails.
  */
 const INTENTIONAL_PROGRAM_CHANGES: Record<string, Record<string, string>> = {
+  // Every upper-body exercise now carries an explicit RPE target. The lifter
+  // logged RIR 0 on all of them and four lifts had not moved in five sessions,
+  // because the engine only adds load once the WEAKEST set reaches the top of
+  // the range. Lower body is deliberately untouched.
   "Heavy Upper": {
+    bench: "RPE 8–9 target added",
     wpull:
-      "Weighted Pull-Up → bodyweight Pull-Up 4×5–10: these were always done at bodyweight and logged as 165 lb",
-    crowH: "renamed Cable Row → Seated Cable Row to match the machine actually used",
-    latH: "12–20 → 8–15: the user dislikes very high reps and 8–15 is still well inside the effective range",
-    curl: "renamed Curl → DB Curl to distinguish it from the cable curl on Volume Upper",
+      "Weighted Pull-Up → bodyweight Pull-Up 4×5–10: these were always done at bodyweight and logged as 165 lb; RPE 9–10 target added",
+    crowH: "renamed Cable Row → Seated Cable Row; RPE 9–10 target added",
+    shoulder: "RPE 8–9 target added",
+    latH: "12–20 → 8–15, RPE 9–10 target and a dropset on the last set",
+    tri: "RPE 9–10, dropset, and supersetted (A1) with the curl, so rest drops to 0s",
+    curl:
+      "renamed Curl → Machine Curl, RPE 9–10, dropset, supersetted (A2) with the pushdown",
   },
   "Volume Upper": {
     incline:
-      "4×8–12 → 5×6–10, then renamed to Incline Smith Machine Bench Press: chest is the stated priority but was getting fewer weekly sets than back",
-    pull: "unit reps → lb with a 2.5 lb increment, so bodyweight pull-ups can progress to weighted",
+      "4×8–12 → 5×6–10, renamed Incline Smith Machine Bench Press, RPE 8–9 target added",
+    pull: "unit reps → lb with a 2.5 lb increment, so bodyweight pull-ups can progress to weighted; RPE 9–10 target added",
     pushup: "removed: optional and unprogressed, leaving direct triceps volume at 3 sets/week",
-    ohtri: "added: Overhead Triceps Extension 3×10–15, bringing triceps to 6 sets/week",
-    crowV: "renamed Cable Row → Seated Cable Row to match the machine actually used",
-    latV: "15–20 → 8–15, matching Heavy Upper",
-    hammer: "removed: replaced by the Bayesian cable curl",
-    bayesian:
-      "added: Bayesian Cable Curl 3×10–15, a long-length biceps movement in place of the hammer curl",
+    ohtri:
+      "added: Overhead Triceps Extension 3×10–15, RPE 9–10, dropset, supersetted (A2)",
+    crowV: "renamed Cable Row → Seated Cable Row; RPE 9–10 target added",
+    latV: "15–20 → 8–15, RPE 9–10 target and a dropset on the last set",
+    hammer: "RPE 9–10, dropset, and supersetted (A1) with the overhead extension, so rest drops to 0s",
   },
 };
 

@@ -236,7 +236,7 @@ describe("program integrity", () => {
         .filter((e) => e.id === id)
         .reduce((n, e) => n + e.sets, 0);
     const triceps = sets("tri") + sets("ohtri");
-    const biceps = sets("curl") + sets("bayesian");
+    const biceps = sets("curl") + sets("hammer");
     expect(triceps).toBe(6);
     expect(biceps).toBe(6);
   });

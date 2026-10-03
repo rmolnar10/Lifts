@@ -6,6 +6,7 @@ import { exercisesForDay, targetRirLabel } from "@/lib/activeProgram";
 import { previousPerformance, suggest } from "@/lib/progression";
 import { saveWorkout, type ExercisePayload } from "@/lib/data";
 import { retiredExercisePayloads } from "@/lib/retired";
+import { deloadStatus } from "@/lib/deload";
 import type { SharedViewProps } from "@/components/AppShell";
 import type { LoggedExercise } from "@/lib/types";
 import {
@@ -227,6 +228,12 @@ export default function WorkoutView({
           <button className="link-button" onClick={() => discardDraft(true)}>
             Start fresh
           </button>
+        </div>
+      ) : null}
+
+      {!editing && deloadStatus(state.workouts).due ? (
+        <div className="notice warn">
+          <strong>Deload session.</strong> {deloadStatus(state.workouts).message}
         </div>
       ) : null}
 
