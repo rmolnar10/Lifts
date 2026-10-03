@@ -103,10 +103,18 @@ describe("weakest-set progression", () => {
 });
 
 describe("exercise-specific increments", () => {
-  it("uses the smaller 2.5 lb jump for weighted pull-ups", () => {
+  it("uses the smaller 2.5 lb jump once Heavy Upper pull-ups carry load", () => {
     const wpull = exerciseById(PROGRAM[HEAVY], "wpull");
-    const history = [workout(HEAVY, "wpull", { reps: [8, 8, 8, 8], weight: 25 })];
+    const history = [workout(HEAVY, "wpull", { reps: [10, 10, 10, 10], weight: 25 })];
     expect(suggest(wpull, HEAVY, history, {}).weight).toBe(27.5);
+  });
+
+  it("treats Heavy Upper pull-ups as bodyweight until plates go on", () => {
+    const wpull = exerciseById(PROGRAM[HEAVY], "wpull");
+    const history = [workout(HEAVY, "wpull", { reps: [8, 8, 7, 8], weight: 0, unit: "lb" })];
+    const s = suggest(wpull, HEAVY, history, {});
+    expect(s.target).toBe("Bodyweight \u00d7 8 / 8 / 8 / 8");
+    expect(s.target).not.toContain("0 lb");
   });
 
   it("progresses bodyweight pull-ups by reps, without printing a phantom load", () => {
@@ -132,12 +140,12 @@ describe("exercise-specific increments", () => {
     expect(suggest(pull, VOLUME, history, {}).target).toBe("25 lb × 10 / 9 / 9");
   });
 
-  it("handles high-rep isolation ranges", () => {
+  it("handles the lateral-raise range topping out", () => {
     const lat = exerciseById(PROGRAM[VOLUME], "latV");
-    const history = [workout(VOLUME, "latV", { reps: [20, 20, 20], weight: 15 })];
+    const history = [workout(VOLUME, "latV", { reps: [15, 15, 15], weight: 15 })];
     const s = suggest(lat, VOLUME, history, {});
-    expect(s.target).toBe("20 lb × 15–20");
-    expect(s.focus).toBe("All sets reached 20. Increase load.");
+    expect(s.target).toBe("20 lb × 8–15");
+    expect(s.focus).toBe("All sets reached 15. Increase load.");
   });
 });
 
@@ -228,7 +236,7 @@ describe("program integrity", () => {
         .filter((e) => e.id === id)
         .reduce((n, e) => n + e.sets, 0);
     const triceps = sets("tri") + sets("ohtri");
-    const biceps = sets("curl") + sets("hammer");
+    const biceps = sets("curl") + sets("bayesian");
     expect(triceps).toBe(6);
     expect(biceps).toBe(6);
   });

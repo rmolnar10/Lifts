@@ -1,6 +1,19 @@
 # Changelog
 
 ## Post-V5 fixes
+- Routine update (2026-10-03):
+  - Heavy Upper pull-ups corrected from "Weighted Pull-Up" to a bodyweight
+    "Pull-Up" at 4x5-10. They had always been done at bodyweight but logged as
+    165 lb (the lifter's bodyweight), which made every suggestion wrong. The
+    five affected history entries and the starting weight were reset to 0 lb,
+    so the exercise now reads "Bodyweight" and will switch to 2.5 lb steps once
+    all four sets reach 10.
+  - Lateral raises moved to 8-15 on both days (were 12-20 and 15-20).
+  - Hammer Curl on Volume Upper replaced by Bayesian Cable Curl 3x10-15. The
+    hammer-curl history is retained and still shows in History and Progress.
+  - Renames to match the equipment actually used: Cable Row -> Seated Cable Row,
+    Curl -> DB Curl, Incline DB Press -> Incline Smith Machine Bench Press.
+  - Weekly set counts are unchanged at 58; only rep ranges and names moved.
 - Volume Upper reworked: incline DB press 4x8-12 -> 5x6-10, and close-grip
   push-ups replaced by an overhead triceps extension 3x10-15. Chest goes from 8
   to 9 direct weekly sets and triceps from 3 to 6, matching biceps.

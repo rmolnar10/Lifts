@@ -50,19 +50,19 @@ export type Program = Record<string, Exercise[]>;
 export const PROGRAM: Program = {
   "Heavy Upper": [
     { id: "bench", name: "Bench Press", sets: 4, min: 5, max: 8, type: "primary", unit: "lb", inc: 5, reset: 5, rest: 180 },
-    { id: "wpull", name: "Weighted Pull-Up", sets: 4, min: 5, max: 8, type: "primary", unit: "lb", inc: 2.5, reset: 5, rest: 180 },
-    { id: "crowH", name: "Cable Row", sets: 3, min: 8, max: 12, type: "isolation", unit: "lb", inc: 5, reset: 8, rest: 120 },
+    { id: "wpull", name: "Pull-Up", sets: 4, min: 5, max: 10, type: "bodyweight", unit: "lb", inc: 2.5, reset: 5, rest: 180 },
+    { id: "crowH", name: "Seated Cable Row", sets: 3, min: 8, max: 12, type: "isolation", unit: "lb", inc: 5, reset: 8, rest: 120 },
     { id: "shoulder", name: "DB Shoulder Press", sets: 3, min: 6, max: 10, type: "primary", unit: "lb", inc: 5, reset: 6, rest: 150 },
-    { id: "latH", name: "Lateral Raise", sets: 3, min: 12, max: 20, type: "isolation", unit: "lb", inc: 5, reset: 12, rest: 90 },
+    { id: "latH", name: "Lateral Raise", sets: 3, min: 8, max: 15, type: "isolation", unit: "lb", inc: 5, reset: 8, rest: 90 },
     { id: "tri", name: "Triceps Pushdown", sets: 3, min: 10, max: 15, type: "isolation", unit: "lb", inc: 5, reset: 10, rest: 90 },
-    { id: "curl", name: "Curl", sets: 3, min: 8, max: 12, type: "isolation", unit: "lb", inc: 5, reset: 8, rest: 90 },
+    { id: "curl", name: "DB Curl", sets: 3, min: 8, max: 12, type: "isolation", unit: "lb", inc: 5, reset: 8, rest: 90 },
   ],
   "Volume Upper": [
-    { id: "incline", name: "Incline DB Press", sets: 5, min: 6, max: 10, type: "primary", unit: "lb", inc: 5, reset: 6, rest: 150 },
+    { id: "incline", name: "Incline Smith Machine Bench Press", sets: 5, min: 6, max: 10, type: "primary", unit: "lb", inc: 5, reset: 6, rest: 150 },
     { id: "pull", name: "Pull-Up", sets: 3, min: 6, max: 10, type: "bodyweight", unit: "lb", inc: 2.5, reset: 6, rest: 150 },
-    { id: "crowV", name: "Cable Row", sets: 3, min: 10, max: 15, type: "isolation", unit: "lb", inc: 5, reset: 10, rest: 120 },
-    { id: "latV", name: "Lateral Raise", sets: 3, min: 15, max: 20, type: "isolation", unit: "lb", inc: 5, reset: 15, rest: 90 },
-    { id: "hammer", name: "Hammer Curl", sets: 3, min: 8, max: 12, type: "isolation", unit: "lb", inc: 5, reset: 8, rest: 90 },
+    { id: "crowV", name: "Seated Cable Row", sets: 3, min: 10, max: 15, type: "isolation", unit: "lb", inc: 5, reset: 10, rest: 120 },
+    { id: "latV", name: "Lateral Raise", sets: 3, min: 8, max: 15, type: "isolation", unit: "lb", inc: 5, reset: 8, rest: 90 },
+    { id: "bayesian", name: "Bayesian Cable Curl", sets: 3, min: 10, max: 15, type: "isolation", unit: "lb", inc: 5, reset: 10, rest: 90 },
     { id: "ohtri", name: "Overhead Triceps Extension", sets: 3, min: 10, max: 15, type: "isolation", unit: "lb", inc: 5, reset: 10, rest: 90 },
   ],
   "Legs + Abs": [
