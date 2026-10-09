@@ -36,14 +36,14 @@ test.describe("In-progress workout drafts", () => {
     await gotoView(page, "Workout");
     await fillExercise(page, "bench", [8, 8, 8, 8], 135);
 
-    await page.getByRole("button", { name: "Legs + Abs" }).click();
-    await fillExercise(page, "squat", [5, 5, 5], 225);
+    await page.getByRole("button", { name: "Volume Upper" }).click();
+    await fillExercise(page, "incline", [8, 8, 8, 8], 115);
 
     await page.getByRole("button", { name: "Heavy Upper" }).click();
     await expect(page.locator("#w-bench")).toHaveValue("135");
 
-    await page.getByRole("button", { name: "Legs + Abs" }).click();
-    await expect(page.locator("#w-squat")).toHaveValue("225");
+    await page.getByRole("button", { name: "Volume Upper" }).click();
+    await expect(page.locator("#w-incline")).toHaveValue("115");
   });
 
   test("'Start fresh' clears the draft", async ({ page }) => {
