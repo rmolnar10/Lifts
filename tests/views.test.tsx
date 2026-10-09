@@ -104,7 +104,26 @@ describe("view rendering", () => {
     expect(html).toContain('id="rir-bench"');
     expect(html).toContain("Finish &amp; save workout");
     // Non-loaded exercises must not offer a weight field.
-    expect(html).not.toContain('id="w-rk"');
+    expect(html).not.toContain('id="w-hlr"');
+  });
+
+  it("workout view refuses to log against a day the program no longer has", () => {
+    // Legs + Abs was dropped when lower-body hypertrophy was deprioritised.
+    // Reaching it from History must explain itself, not show an empty form the
+    // user could save over their old session with.
+    const html = renderToStaticMarkup(
+      <WorkoutView
+        {...shared}
+        day="Legs + Abs"
+        editingId={null}
+        setEditingId={() => undefined}
+        onDone={() => undefined}
+        account="test@example.com"
+      />,
+    );
+    expect(html).toContain("no longer part of");
+    expect(html).toContain("history is untouched");
+    expect(html).not.toContain("Finish &amp; save workout");
   });
 
   it("workout view in edit mode loads the saved values and hides next targets", () => {

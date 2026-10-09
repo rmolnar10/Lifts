@@ -21,7 +21,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
 import { describe, expect, it } from "vitest";
-import { PROGRAM, type Exercise } from "@/lib/program";
+import { PROGRAM, UNTRACKED_TYPES, type Exercise } from "@/lib/program";
 import { previousPerformance, suggest } from "@/lib/progression";
 import { calcPRs, totalVolume } from "@/lib/stats";
 import type { StartingWeights, Workout } from "@/lib/types";
@@ -126,16 +126,19 @@ function buildHistory(
 /**
  * Every intentional difference between V4's program and the current one, keyed
  * by day then exercise id. Anything not listed here is drift and fails.
+ *
+ * The program has diverged structurally, not just numerically: V4's single
+ * lower-body day is gone and four non-progressing support days have arrived.
+ * The engine itself is still V4's, which is what the parity suite below proves.
  */
 const INTENTIONAL_PROGRAM_CHANGES: Record<string, Record<string, string>> = {
-  // Every upper-body exercise now carries an explicit RPE target. The lifter
-  // logged RIR 0 on all of them and four lifts had not moved in five sessions,
-  // because the engine only adds load once the WEAKEST set reaches the top of
-  // the range. Lower body is deliberately untouched.
+  // Every upper-body exercise carries an explicit RPE target. The lifter logged
+  // RIR 0 on all of them and four lifts had not moved in six sessions, because
+  // the engine only adds load once the WEAKEST set reaches the top of the range.
   "Heavy Upper": {
     bench: "RPE 8–9 target added",
     wpull:
-      "Weighted Pull-Up → bodyweight Pull-Up 4×5–10: these were always done at bodyweight and logged as 165 lb; RPE 9–10 target added",
+      "Weighted Pull-Up → bodyweight Pull-Up, 4→3 sets at 5–10: always done at bodyweight but logged as 165 lb",
     crowH: "renamed Cable Row → Seated Cable Row; RPE 9–10 target added",
     shoulder: "RPE 8–9 target added",
     latH: "12–20 → 8–15, RPE 9–10 target and a dropset on the last set",
@@ -145,30 +148,66 @@ const INTENTIONAL_PROGRAM_CHANGES: Record<string, Record<string, string>> = {
   },
   "Volume Upper": {
     incline:
-      "4×8–12 → 5×6–10, renamed Incline Smith Machine Bench Press, RPE 8–9 target added",
-    pull: "unit reps → lb with a 2.5 lb increment, so bodyweight pull-ups can progress to weighted; RPE 9–10 target added",
-    pushup: "removed: optional and unprogressed, leaving direct triceps volume at 3 sets/week",
-    ohtri:
-      "added: Overhead Triceps Extension 3×10–15, RPE 9–10, dropset, supersetted (A2)",
-    crowV: "renamed Cable Row → Seated Cable Row; RPE 9–10 target added",
+      "4×8–12 → 4×6–10, renamed Incline Smith Machine Bench Press; the 5th set was always the weakest and gated every load increase",
+    fly: "added: Cable Fly 3×10–15, the only chest work at a long muscle length",
+    pull: "unit reps → lb with a 2.5 lb increment, so bodyweight pull-ups can progress to weighted",
+    crowV: "renamed Seated Cable Row and 3→2 sets, funding the chest increase",
     latV: "15–20 → 8–15, RPE 9–10 target and a dropset on the last set",
-    hammer: "RPE 9–10, dropset, and supersetted (A1) with the overhead extension, so rest drops to 0s",
+    hammer: "RPE 9–10, dropset, supersetted (A1) with the overhead extension",
+    ohtri: "added: Overhead Triceps Extension 3×10–15, bringing triceps to 6 sets/week",
+    pushup: "removed: optional and unprogressed, leaving direct triceps volume at 3 sets/week",
+    hlr: "moved here from Legs + Abs so core work survives a skipped lower-body day",
   },
+};
+
+/**
+ * V4 days this program no longer has. Lower-body hypertrophy was deliberately
+ * dropped: the stated priority is hip mobility and pelvic-floor control, which
+ * the support days serve better, and heavy bracing can raise resting tone.
+ * History logged under these days is preserved, not deleted.
+ */
+const RETIRED_DAYS: Record<string, string> = {
+  "Legs + Abs":
+    "dropped: lower-body hypertrophy deprioritised in favour of hip mobility and pelvic-floor work",
+};
+
+/** Days that did not exist in V4. None of them is load-progressed. */
+const ADDED_DAYS: Record<string, string> = {
+  "Functional Lower": "hip stability and unilateral control, unloaded",
+  "Hip Mobility": "mobility and movement quality, unloaded",
+  "Pelvic Floor": "pelvic-floor control and relaxation, unloaded",
+  Cardio: "zone 2, logged for consistency rather than progression",
 };
 
 /** Ids whose definition is byte-identical in both programs. */
 function unchangedIds(day: string): string[] {
-  const mine = new Map(PROGRAM[day].map((e) => [e.id, e]));
+  const mine = new Map((PROGRAM[day] ?? []).map((e) => [e.id, e]));
   return v4.PROGRAM[day]
     .filter((e) => JSON.stringify(mine.get(e.id)) === JSON.stringify(e))
     .map((e) => e.id);
 }
 
 describe("program drift", () => {
-  it("differs from V4 only where we intended", () => {
-    expect(Object.keys(v4.PROGRAM)).toEqual(Object.keys(PROGRAM));
+  it("accounts for every day that was added or retired", () => {
+    const theirs = Object.keys(v4.PROGRAM);
+    const mine = Object.keys(PROGRAM);
 
-    for (const day of Object.keys(v4.PROGRAM)) {
+    const removed = theirs.filter((d) => !mine.includes(d)).sort();
+    const added = mine.filter((d) => !theirs.includes(d)).sort();
+
+    expect(removed, "a V4 day vanished without being documented").toEqual(
+      Object.keys(RETIRED_DAYS).sort(),
+    );
+    expect(added, "a new day appeared without being documented").toEqual(
+      Object.keys(ADDED_DAYS).sort(),
+    );
+  });
+
+  it("differs from V4 only where we intended, on the days we kept", () => {
+    const shared = Object.keys(v4.PROGRAM).filter((d) => d in PROGRAM);
+    expect(shared.length, "no days left to compare").toBeGreaterThan(0);
+
+    for (const day of shared) {
       const theirs = new Map(v4.PROGRAM[day].map((e) => [e.id, e]));
       const mine = new Map(PROGRAM[day].map((e) => [e.id, e]));
       const changed = new Set<string>();
@@ -187,12 +226,22 @@ describe("program drift", () => {
     }
   });
 
-  it("keeps rear delt fly and cardio out of the program", () => {
+  it("keeps rear delt fly out of the program", () => {
     const names = Object.values(PROGRAM)
       .flat()
       .map((e) => e.name.toLowerCase());
     expect(names.some((n) => n.includes("rear delt"))).toBe(false);
-    expect(names.some((n) => /cardio|run|walk|bike/.test(n))).toBe(false);
+  });
+
+  it("tracks cardio without ever progressing it", () => {
+    // V4 excluded cardio entirely. It is now tracked at the user's request, but
+    // only as a logged session: it must never acquire a load or an increment.
+    const cardio = PROGRAM["Cardio"] ?? [];
+    expect(cardio.length).toBeGreaterThan(0);
+    for (const e of cardio) {
+      expect(UNTRACKED_TYPES).toContain(e.type);
+      expect(e.inc).toBe(0);
+    }
   });
 });
 

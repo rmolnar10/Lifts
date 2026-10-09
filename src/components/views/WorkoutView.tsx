@@ -204,6 +204,31 @@ export default function WorkoutView({
     onDone();
   }
 
+  // A workout logged under a day the program no longer has — the old
+  // Legs + Abs day, say. Its history is intact and still shows in History and
+  // in the export; there is simply no template left to edit it against, and an
+  // empty form would invite the user to save over it with nothing.
+  if (!exercisesForDay(program, day).length) {
+    return (
+      <div className="card">
+        <h2>{day}</h2>
+        <p className="small">
+          This day is no longer part of <strong>{program.name}</strong>, so there is no
+          template to log against. Your {day} history is untouched — you can still see it
+          under History and in any export.
+        </p>
+        <button
+          onClick={() => {
+            setEditingId(null);
+            setDay(program.dayOrder[0] ?? day);
+          }}
+        >
+          Back to {program.dayOrder[0] ?? "the program"}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="tabs">
@@ -231,9 +256,9 @@ export default function WorkoutView({
         </div>
       ) : null}
 
-      {!editing && deloadStatus(state.workouts).due ? (
+      {!editing && deloadStatus(state.workouts, program).due ? (
         <div className="notice warn">
-          <strong>Deload session.</strong> {deloadStatus(state.workouts).message}
+          <strong>Deload session.</strong> {deloadStatus(state.workouts, program).message}
         </div>
       ) : null}
 

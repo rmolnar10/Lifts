@@ -6,13 +6,21 @@ import {
   RAGGED_SET_SPREAD,
   STALL_SESSIONS,
 } from "@/lib/coaching";
-import { DELOAD_EVERY_N_WORKOUTS, deloadStatus } from "@/lib/deload";
+import { DELOAD_EVERY_N_WORKOUTS, deloadStatus, strengthDays } from "@/lib/deload";
+import type { ActiveProgram } from "@/lib/activeProgram";
 import { workout } from "./helpers";
 
 const HEAVY = "Heavy Upper";
 const VOLUME = "Volume Upper";
 
 const find = (day: string, id: string) => PROGRAM[day].find((e) => e.id === id)!;
+
+function activeProgramFromBuiltin(): ActiveProgram {
+  return {
+    id: "p", slug: "lifts-3day", name: "Lifts", weeks: null, week: 1,
+    blockName: "", hasWeeks: false, dayOrder: Object.keys(PROGRAM), days: PROGRAM,
+  };
+}
 
 describe("coaching: when to add load", () => {
   it("says add load once every set reaches the top of the range", () => {
@@ -26,7 +34,7 @@ describe("coaching: when to add load", () => {
 
   it("tells a bodyweight lift to start adding plates rather than 'increase load'", () => {
     const pull = find(HEAVY, "wpull"); // bodyweight, 4 x 5-10
-    const history = [workout(HEAVY, "wpull", { reps: [10, 10, 10, 10], weight: 0 })];
+    const history = [workout(HEAVY, "wpull", { reps: [10, 10, 10], weight: 0 })];
     const c = coachExercise(pull, HEAVY, history);
 
     expect(c.status).toBe("add-load");
@@ -99,9 +107,9 @@ describe("coaching: diagnosing a stall", () => {
   });
 
   it("does not try to load-progress a timed or practice movement", () => {
-    const plank = find("Legs + Abs", "sideplank");
-    const history = [workout("Legs + Abs", "sideplank", { reps: [60, 60], weight: 0 })];
-    expect(coachExercise(plank, "Legs + Abs", history).status).toBe("untracked");
+    const hold = find("Functional Lower", "hollow");
+    const history = [workout("Functional Lower", "hollow", { reps: [30, 30], weight: 0 })];
+    expect(coachExercise(hold, "Functional Lower", history).status).toBe("untracked");
   });
 });
 
@@ -151,8 +159,25 @@ describe("deload reminder", () => {
   });
 
   it("honours a custom interval", () => {
-    expect(deloadStatus(sessions(21), 21).due).toBe(true);
-    expect(deloadStatus(sessions(7), 21).due).toBe(false);
-    expect(deloadStatus(sessions(7), 21).remaining).toBe(14);
+    expect(deloadStatus(sessions(21), undefined, 21).due).toBe(true);
+    expect(deloadStatus(sessions(7), undefined, 21).due).toBe(false);
+    expect(deloadStatus(sessions(7), undefined, 21).remaining).toBe(14);
+  });
+
+  it("counts strength sessions only, ignoring mobility and cardio", () => {
+    const program = activeProgramFromBuiltin();
+    const strength = sessions(DELOAD_EVERY_N_WORKOUTS - 1);
+    const support = [
+      workout("Hip Mobility", "cossack", { reps: [8, 8] }),
+      workout("Cardio", "zone2", { reps: [35] }),
+      workout("Pelvic Floor", "pfrelax", { reps: [180] }),
+      workout("Functional Lower", "hollow", { reps: [30] }),
+    ];
+    // Four extra sessions, none of which should move the counter.
+    const status = deloadStatus([...strength, ...support], program);
+    expect(status.due).toBe(false);
+    expect(status.remaining).toBe(1);
+
+    expect(deloadStatus([...strength, ...support, ...sessions(1)], program).due).toBe(true);
   });
 });

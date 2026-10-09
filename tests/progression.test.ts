@@ -1,16 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { PROGRAM, findExercise, startKey, type Exercise } from "@/lib/program";
+import { PROGRAM, UNTRACKED_TYPES, findExercise, startKey, type Exercise } from "@/lib/program";
 import { suggest } from "@/lib/progression";
 import type { Workout } from "@/lib/types";
 import { exerciseById, repsFromTarget, workout } from "./helpers";
 
 const HEAVY = "Heavy Upper";
 const VOLUME = "Volume Upper";
-const LEGS = "Legs + Abs";
+const FUNC = "Functional Lower";
+const PELVIC = "Pelvic Floor";
+const CARDIO = "Cardio";
 
 const bench = exerciseById(PROGRAM[HEAVY], "bench");
 const row = exerciseById(PROGRAM[HEAVY], "crowH");
-const squat = exerciseById(PROGRAM[LEGS], "squat");
+// Squat left the program when lower-body hypertrophy was deprioritised, but
+// the V4 spec's worked example is still the clearest statement of the rule, so
+// the exercise is declared here rather than read from PROGRAM.
+const squat: Exercise = {
+  id: "squat", name: "Squat", sets: 3, min: 5, max: 8,
+  type: "primary", unit: "lb", inc: 5, reset: 5, rest: 180,
+};
 
 describe("baseline (no history)", () => {
   it("asks for a starting weight when none is set", () => {
@@ -84,8 +92,8 @@ describe("weakest-set progression", () => {
   });
 
   it("follows the spec squat example 8/7/6", () => {
-    const history = [workout(LEGS, "squat", { reps: [8, 7, 6], weight: 185 })];
-    expect(suggest(squat, LEGS, history, {}).target).toBe("185 lb × 8 / 7 / 7");
+    const history = [workout("Legs + Abs", "squat", { reps: [8, 7, 6], weight: 185 })];
+    expect(suggest(squat, "Legs + Abs", history, {}).target).toBe("185 lb × 8 / 7 / 7");
   });
 
   it("uses the most recent workout for that day", () => {
@@ -105,15 +113,15 @@ describe("weakest-set progression", () => {
 describe("exercise-specific increments", () => {
   it("uses the smaller 2.5 lb jump once Heavy Upper pull-ups carry load", () => {
     const wpull = exerciseById(PROGRAM[HEAVY], "wpull");
-    const history = [workout(HEAVY, "wpull", { reps: [10, 10, 10, 10], weight: 25 })];
+    const history = [workout(HEAVY, "wpull", { reps: [10, 10, 10], weight: 25 })];
     expect(suggest(wpull, HEAVY, history, {}).weight).toBe(27.5);
   });
 
   it("treats Heavy Upper pull-ups as bodyweight until plates go on", () => {
     const wpull = exerciseById(PROGRAM[HEAVY], "wpull");
-    const history = [workout(HEAVY, "wpull", { reps: [8, 8, 7, 8], weight: 0, unit: "lb" })];
+    const history = [workout(HEAVY, "wpull", { reps: [8, 8, 7], weight: 0, unit: "lb" })];
     const s = suggest(wpull, HEAVY, history, {});
-    expect(s.target).toBe("Bodyweight \u00d7 8 / 8 / 8 / 8");
+    expect(s.target).toBe("Bodyweight \u00d7 8 / 8 / 8");
     expect(s.target).not.toContain("0 lb");
   });
 
@@ -182,34 +190,46 @@ describe("non-load exercise types", () => {
   });
 
   it("keeps reverse kegel practice non-progressive", () => {
-    const rk = exerciseById(PROGRAM[LEGS], "rk");
-    const history = [workout(LEGS, "rk", { reps: [180], unit: "sec" })];
-    const s = suggest(rk, LEGS, history, {});
+    const rk = exerciseById(PROGRAM[PELVIC], "pfrelax");
+    const history = [workout(PELVIC, "pfrelax", { reps: [180], unit: "sec" })];
+    const s = suggest(rk, PELVIC, history, {});
     expect(s.target).toBe("2–3 minutes of relaxed practice");
     expect(s.focus).toBe("Quality only; do not strain.");
   });
 
-  it("progresses side plank on time and then on difficulty", () => {
-    const plank = exerciseById(PROGRAM[LEGS], "sideplank");
-    const building = [workout(LEGS, "sideplank", { reps: [40, 35], unit: "sec" })];
-    expect(suggest(plank, LEGS, building, {}).target).toBe("30–60s per set");
-    expect(suggest(plank, LEGS, building, {}).focus).toBe(
+  it("progresses a timed hold on time and then on difficulty", () => {
+    const hold = exerciseById(PROGRAM[FUNC], "hollow");
+    const building = [workout(FUNC, "hollow", { reps: [25, 20, 22], unit: "sec" })];
+    expect(suggest(hold, FUNC, building, {}).target).toBe("15–30s per set");
+    expect(suggest(hold, FUNC, building, {}).focus).toBe(
       "Prioritize Set 2; add 5–10 sec if form is solid.",
     );
 
-    const maxed = [workout(LEGS, "sideplank", { reps: [60, 60], unit: "sec" })];
-    expect(suggest(plank, LEGS, maxed, {}).target).toBe("Progress the variation/load");
+    const maxed = [workout(FUNC, "hollow", { reps: [30, 30, 30], unit: "sec" })];
+    expect(suggest(hold, FUNC, maxed, {}).target).toBe("Progress the variation/load");
+  });
+
+  it("reads cardio in minutes and never tells it to add load", () => {
+    const zone2 = exerciseById(PROGRAM[CARDIO], "zone2");
+    const done = [workout(CARDIO, "zone2", { reps: [35], unit: "min" })];
+    const s = suggest(zone2, CARDIO, done, {});
+    expect(s.target).toBe("30–45 min per set");
+    expect(s.focus).toContain("conversational");
+    expect(s.weight).toBe("");
+
+    const maxed = [workout(CARDIO, "zone2", { reps: [45], unit: "min" })];
+    expect(suggest(zone2, CARDIO, maxed, {}).target).toBe("Hold 45 min or add a session");
   });
 
   it("keeps hanging leg raise quality-controlled", () => {
-    const hlr = exerciseById(PROGRAM[LEGS], "hlr");
-    const building = [workout(LEGS, "hlr", { reps: [12, 10, 9], unit: "reps" })];
-    const s = suggest(hlr, LEGS, building, {});
+    const hlr = exerciseById(PROGRAM[VOLUME], "hlr");
+    const building = [workout(VOLUME, "hlr", { reps: [12, 10, 9], unit: "reps" })];
+    const s = suggest(hlr, VOLUME, building, {});
     expect(s.target).toBe("Build toward 15 clean reps");
     expect(s.focus).toBe("Prioritize Set 3; no swinging.");
 
-    const maxed = [workout(LEGS, "hlr", { reps: [15, 15, 15], unit: "reps" })];
-    expect(suggest(hlr, LEGS, maxed, {}).target).toBe("15 / 15 / 15 controlled reps");
+    const maxed = [workout(VOLUME, "hlr", { reps: [15, 15, 15], unit: "reps" })];
+    expect(suggest(hlr, VOLUME, maxed, {}).target).toBe("15 / 15 / 15 controlled reps");
   });
 });
 
@@ -221,11 +241,21 @@ describe("program integrity", () => {
     expect(names.some((n) => n.includes("rear delt"))).toBe(false);
   });
 
-  it("keeps the three programmed days with their exercise counts", () => {
-    expect(Object.keys(PROGRAM)).toEqual([HEAVY, VOLUME, LEGS]);
+  it("keeps two gym days and four support days", () => {
+    expect(Object.keys(PROGRAM)).toEqual([
+      HEAVY, VOLUME, FUNC, "Hip Mobility", PELVIC, CARDIO,
+    ]);
     expect(PROGRAM[HEAVY]).toHaveLength(7);
-    expect(PROGRAM[VOLUME]).toHaveLength(6);
-    expect(PROGRAM[LEGS]).toHaveLength(6);
+    expect(PROGRAM[VOLUME]).toHaveLength(8);
+  });
+
+  it("never load-progresses the support days", () => {
+    for (const day of [FUNC, "Hip Mobility", PELVIC, CARDIO]) {
+      for (const e of PROGRAM[day]) {
+        expect(UNTRACKED_TYPES, `${day}/${e.id} must not be load-tracked`).toContain(e.type);
+        expect(e.inc, `${day}/${e.id} must not carry an increment`).toBe(0);
+      }
+    }
   });
 
   it("gives triceps and biceps comparable weekly volume", () => {
@@ -241,14 +271,18 @@ describe("program integrity", () => {
     expect(biceps).toBe(6);
   });
 
-  it("gives the priority muscle more direct work than before", () => {
-    const chest = PROGRAM[HEAVY].find((e) => e.id === "bench")!.sets +
-      PROGRAM[VOLUME].find((e) => e.id === "incline")!.sets;
-    expect(chest).toBe(9);
+  it("gives chest 11 direct sets, the most of any muscle", () => {
+    const sets = (day: string, id: string) =>
+      PROGRAM[day].find((e) => e.id === id)!.sets;
+    const chest = sets(HEAVY, "bench") + sets(VOLUME, "incline") + sets(VOLUME, "fly");
+    const back =
+      sets(HEAVY, "wpull") + sets(HEAVY, "crowH") + sets(VOLUME, "pull") + sets(VOLUME, "crowV");
+    expect(chest).toBe(11);
+    expect(back).toBe(11);
   });
 
   it("exposes every exercise by day and id", () => {
     expect(findExercise(HEAVY, "bench")?.name).toBe("Bench Press");
-    expect(findExercise(LEGS, "bench")).toBeUndefined();
+    expect(findExercise(CARDIO, "bench")).toBeUndefined();
   });
 });

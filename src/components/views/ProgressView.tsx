@@ -28,7 +28,7 @@ export default function ProgressView({
 
   const coaching = useMemo(() => coachProgram(state, program), [state, program]);
   const todo = useMemo(() => actionItems(coaching), [coaching]);
-  const deload = deloadStatus(state.workouts);
+  const deload = deloadStatus(state.workouts, program);
 
   // Open on something worth looking at: the lift most in need of a change,
   // else anything with history. Landing on an empty chart teaches nothing.

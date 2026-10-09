@@ -14,7 +14,7 @@ export default function Dashboard({ state, day, setDay, program, onStartWorkout 
   const { workouts, starts } = state;
   const volume = totalVolume(workouts);
   const last = workouts.length ? workouts[workouts.length - 1] : null;
-  const deload = deloadStatus(workouts);
+  const deload = deloadStatus(workouts, program);
 
   return (
     <>

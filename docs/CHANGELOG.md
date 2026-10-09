@@ -1,6 +1,26 @@
 # Changelog
 
 ## Post-V5 fixes
+- Program restructured around the real priorities (2026-10-09):
+  - Lower-body hypertrophy dropped. The stated priority is hip mobility and
+    pelvic-floor control; a loaded leg day serves that poorly, heavy bracing can
+    raise resting tone in a hypertonic floor, and in six weeks exactly one of
+    twelve sessions was a leg day. The Legs + Abs day is gone; its history is
+    preserved and still shows in History and the export.
+  - Two gym days carry all the hypertrophy work. Chest 9 -> 11 direct sets via a
+    new Cable Fly 3x10-15 and incline 5 -> 4 sets (the 5th set was always the
+    weakest and gated every load increase). Heavy Upper pull-ups 4 -> 3, Volume
+    Upper cable row 3 -> 2. Arms stay at 6 sets each. Back 13 -> 11.
+  - Hanging Leg Raise moved to Volume Upper so core work survives a skipped day.
+  - Four non-progressing days added from the user's own routines: Functional
+    Lower, Hip Mobility, Pelvic Floor and Cardio. They are logged but never
+    load-progressed, and a 'min' unit was added for zone 2 work.
+  - The deload reminder now counts strength sessions only. Counting mobility and
+    cardio would have fired it two or three times as often as intended.
+  - A workout logged under a day the program no longer has now explains itself
+    instead of showing an empty form the user could save over their history with.
+  - The V4 parity suite still proves the engine is unchanged; its drift half now
+    tracks retired and added days as well as per-exercise changes.
 - Progress tab rebuilt around "what do I change next" (2026-10-03):
   - A "What to change next session" list naming every lift that is ready for
     more load or has stalled, with the specific instruction for each: which set

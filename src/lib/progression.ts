@@ -103,9 +103,21 @@ export function suggest(
   const low = weakestSetIndex(reps);
 
   if (exercise.type === "timed") {
+    // Minutes and seconds both land here: cardio is timed work that simply is
+    // not load-progressed, so the unit has to come from the exercise.
+    const long = exercise.unit === "min";
     return {
-      target: top ? "Progress the variation/load" : `${exercise.min}–${exercise.max}s per set`,
-      focus: `Prioritize Set ${low + 1}; add 5–10 sec if form is solid.`,
+      target: top
+        ? long
+          ? `Hold ${exercise.max} ${exercise.unit} or add a session`
+          : "Progress the variation/load"
+        : long
+          ? `${exercise.min}–${exercise.max} ${exercise.unit} per set`
+          // V4's exact wording for seconds; the parity harness asserts it.
+          : `${exercise.min}–${exercise.max}s per set`,
+      focus: long
+        ? "Keep it conversational; this is recovery-friendly work."
+        : `Prioritize Set ${low + 1}; add 5–10 ${exercise.unit} if form is solid.`,
       weight: "",
     };
   }
