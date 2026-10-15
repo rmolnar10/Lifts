@@ -31,6 +31,7 @@ describe("exercises removed from the program", () => {
       weight: 0,
       unit: "reps",
       rir: 0,
+      form_ok: null,
       reps: [20, 16],
     });
   });

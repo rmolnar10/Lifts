@@ -236,7 +236,8 @@ describe("view rendering", () => {
       />,
     );
     expect(html).not.toContain("Picked up where you left off");
-    expect(html).toContain('value="140"'); // last session's bench load
+    // Bench topped out at 140 last time, so the box starts at the planned 145.
+    expect(html).toContain('value="145"');
   });
 
   it("renders every view with no data at all", () => {

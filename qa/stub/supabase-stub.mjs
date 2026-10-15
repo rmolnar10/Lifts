@@ -248,11 +248,23 @@ const PROGRAM_SQL = `
   where p.id = $1
 `;
 
+// Like PostgREST, only the columns the client asked for are read, so a client
+// asking for a V6 column on a database without migration 0006 gets the same
+// "column does not exist" error the real API would return.
+const workoutsSql = (select) => {
+  const readiness = /\breadiness\b/.test(select) ? "w.readiness," : "";
+  const formOk = /\bform_ok\b/.test(select) ? "'form_ok', we.form_ok," : "";
+  return WORKOUTS_SQL.replace("w.notes, w.readiness,", `w.notes, ${readiness}`).replace(
+    "'form_ok', we.form_ok,",
+    formOk,
+  );
+};
+
 const WORKOUTS_SQL = `
   select coalesce(json_agg(w order by w.performed_at, w.created_at), '[]'::json) as data
   from (
     select
-      w.id, w.day, w.performed_at, w.created_at, w.notes,
+      w.id, w.day, w.performed_at, w.created_at, w.notes, w.readiness,
       coalesce((
         select json_agg(json_build_object(
           'exercise_id', we.exercise_id,
@@ -260,6 +272,7 @@ const WORKOUTS_SQL = `
           'weight', we.weight,
           'unit', we.unit,
           'rir', we.rir,
+          'form_ok', we.form_ok,
           'position', we.position,
           'workout_sets', coalesce((
             select json_agg(json_build_object('set_number', ws.set_number, 'reps', ws.reps)
@@ -287,6 +300,8 @@ async function handleRest(req, res, url) {
       "import_program",
       "set_active_program",
       "adopt_orphan_history",
+      "log_bodyweight",
+      "set_workout_readiness",
     ];
     if (!allowed.includes(fn)) {
       return send(res, 501, { message: `QA stub: unknown rpc ${fn}` });
@@ -312,9 +327,10 @@ async function handleRest(req, res, url) {
 
   try {
     if (table === "workouts" && req.method === "GET") {
+      const base = workoutsSql(url.searchParams.get("select") ?? "");
       const sql = where.program_id
-        ? WORKOUTS_SQL.replace("from public.workouts w", "from public.workouts w where w.program_id = $1")
-        : WORKOUTS_SQL;
+        ? base.replace("from public.workouts w", "from public.workouts w where w.program_id = $1")
+        : base;
       const result = await asUser(userId, (c) =>
         c.query(sql, where.program_id ? [where.program_id] : []),
       );
@@ -329,6 +345,13 @@ async function handleRest(req, res, url) {
               [where.program_id],
             )
           : c.query("select day, exercise_id, starting_weight from public.user_exercise_settings"),
+      );
+      return send(res, 200, result.rows);
+    }
+
+    if (table === "body_metrics" && req.method === "GET") {
+      const result = await asUser(userId, (c) =>
+        c.query("select measured_on::text, weight from public.body_metrics order by measured_on"),
       );
       return send(res, 200, result.rows);
     }

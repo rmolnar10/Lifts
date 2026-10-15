@@ -8,7 +8,14 @@
 
 import { getSupabaseBrowserClient } from "./supabase/client";
 import { startKey } from "./program";
-import type { AppState, LoggedExercise, StartingWeights, Workout } from "./types";
+import type {
+  AppState,
+  BodyweightEntry,
+  LoggedExercise,
+  Readiness,
+  StartingWeights,
+  Workout,
+} from "./types";
 import type { Unit } from "./program";
 import { LEGACY_PROGRAM_ID } from "./activeProgram";
 
@@ -23,6 +30,8 @@ interface WorkoutExerciseRow {
   weight: number | string;
   unit: string;
   rir: number | null;
+  /** Absent until migration 0006 is applied. */
+  form_ok?: boolean | null;
   position: number;
   workout_sets: WorkoutSetRow[] | null;
 }
@@ -33,6 +42,8 @@ interface WorkoutRow {
   performed_at: string;
   created_at: string;
   notes: string | null;
+  /** Absent until migration 0006 is applied. */
+  readiness?: string | null;
   workout_exercises: WorkoutExerciseRow[] | null;
 }
 
@@ -49,6 +60,8 @@ export interface ExercisePayload {
   weight: number;
   unit: Unit;
   rir: number | null;
+  /** Ignored by the pre-V6 save_workout, so sending it is always safe. */
+  form_ok?: boolean | null;
   reps: number[];
 }
 
@@ -64,6 +77,7 @@ function rowToWorkout(row: WorkoutRow): Workout {
       weight: Number(ex.weight),
       unit: ex.unit as Unit,
       rir: ex.rir === null ? null : Number(ex.rir),
+      formOk: ex.form_ok ?? null,
     };
   }
 
@@ -73,10 +87,36 @@ function rowToWorkout(row: WorkoutRow): Workout {
     date: row.performed_at,
     exercises,
     notes: row.notes ?? "",
+    readiness: (row.readiness as Readiness | null | undefined) ?? null,
   };
 }
 
-/** Loads the signed-in user's history for one program. */
+/**
+ * True when an error means a V6 column, table or function does not exist yet,
+ * i.e. migration 0006 has not been applied to this project.
+ */
+export function isMissingV6Schema(error: unknown): boolean {
+  const code = (error as { code?: string } | null)?.code ?? "";
+  const message = String((error as { message?: string } | null)?.message ?? "");
+  return (
+    code === "42703" || // undefined column
+    code === "42P01" || // undefined table
+    code === "42883" || // undefined function
+    code === "PGRST202" ||
+    code === "PGRST204" ||
+    code === "PGRST205" ||
+    /column .* does not exist/i.test(message) ||
+    /could not find the (function|table)/i.test(message) ||
+    /relation .* does not exist/i.test(message)
+  );
+}
+
+const WORKOUT_COLUMNS = (v6: boolean) =>
+  `id, day, performed_at, created_at, notes, ${v6 ? "readiness, " : ""}` +
+  `workout_exercises (exercise_id, name, weight, unit, rir, ${v6 ? "form_ok, " : ""}position, ` +
+  "workout_sets (set_number, reps))";
+
+/** Loads the signed-in user's history for one program, plus their bodyweight. */
 export async function loadState(programId: string): Promise<AppState> {
   const supabase = getSupabaseBrowserClient();
 
@@ -84,26 +124,33 @@ export async function loadState(programId: string): Promise<AppState> {
   // exactly as the app did previously.
   const legacy = programId === LEGACY_PROGRAM_ID;
 
-  let workoutQuery = supabase
-    .from("workouts")
-    .select(
-      "id, day, performed_at, created_at, notes, " +
-        "workout_exercises (exercise_id, name, weight, unit, rir, position, " +
-        "workout_sets (set_number, reps))",
-    );
-  if (!legacy) workoutQuery = workoutQuery.eq("program_id", programId);
+  const workoutQuery = (v6: boolean) => {
+    let query = supabase.from("workouts").select(WORKOUT_COLUMNS(v6));
+    if (!legacy) query = query.eq("program_id", programId);
+    return query
+      .order("performed_at", { ascending: true })
+      .order("created_at", { ascending: true });
+  };
 
   let settingsQuery = supabase
     .from("user_exercise_settings")
     .select("day, exercise_id, starting_weight");
   if (!legacy) settingsQuery = settingsQuery.eq("program_id", programId);
 
-  const [workoutsResult, settingsResult] = await Promise.all([
-    workoutQuery
-      .order("performed_at", { ascending: true })
-      .order("created_at", { ascending: true }),
+  const [firstWorkouts, settingsResult, bodyweight] = await Promise.all([
+    workoutQuery(true),
     settingsQuery,
+    loadBodyweight(),
   ]);
+
+  // A deploy can land before migration 0006 does. Read history the V5 way
+  // rather than failing to load anything.
+  let workoutsResult = firstWorkouts;
+  let v6Inputs = bodyweight !== null;
+  if (workoutsResult.error && isMissingV6Schema(workoutsResult.error)) {
+    v6Inputs = false;
+    workoutsResult = await workoutQuery(false);
+  }
 
   if (workoutsResult.error) throw workoutsResult.error;
   if (settingsResult.error) throw settingsResult.error;
@@ -116,7 +163,34 @@ export async function loadState(programId: string): Promise<AppState> {
       row.starting_weight === null ? "" : Number(row.starting_weight);
   }
 
-  return { starts, workouts };
+  return { starts, workouts, bodyweight: bodyweight ?? [], v6Inputs };
+}
+
+/** Bodyweight history, oldest first. Null when the table does not exist yet. */
+async function loadBodyweight(): Promise<BodyweightEntry[] | null> {
+  const supabase = getSupabaseBrowserClient();
+  const { data, error } = await supabase
+    .from("body_metrics")
+    .select("measured_on, weight")
+    .order("measured_on", { ascending: true });
+  if (error) {
+    if (isMissingV6Schema(error)) return null;
+    throw error;
+  }
+  return ((data ?? []) as { measured_on: string; weight: number | string }[]).map((row) => ({
+    date: row.measured_on,
+    weight: Number(row.weight),
+  }));
+}
+
+/** Records one day's bodyweight; `null` removes that day's entry. */
+export async function logBodyweight(date: string, weight: number | null): Promise<void> {
+  const supabase = getSupabaseBrowserClient();
+  const { error } = await supabase.rpc("log_bodyweight", {
+    p_measured_on: date,
+    p_weight: weight,
+  });
+  if (error) throw error;
 }
 
 /**
@@ -131,6 +205,7 @@ export async function saveWorkout(params: {
   exercises: ExercisePayload[];
   programId: string;
   weekNumber: number | null;
+  readiness?: Readiness | null;
 }): Promise<string> {
   const supabase = getSupabaseBrowserClient();
   const { data, error } = await supabase.rpc("save_workout", {
@@ -146,7 +221,20 @@ export async function saveWorkout(params: {
       : { p_program_id: params.programId, p_week_number: params.weekNumber }),
   });
   if (error) throw error;
-  return data as string;
+  const workoutId = data as string;
+
+  // Readiness is a separate call so save_workout's signature stays as 0004
+  // defined it. Losing it to a missing migration must not lose the workout.
+  // An edit always writes it, so clearing it sticks.
+  if (params.readiness || params.workoutId) {
+    const result = await supabase.rpc("set_workout_readiness", {
+      p_workout_id: workoutId,
+      p_readiness: params.readiness ?? null,
+    });
+    if (result.error && !isMissingV6Schema(result.error)) throw result.error;
+  }
+
+  return workoutId;
 }
 
 export async function deleteWorkout(workoutId: string): Promise<void> {
@@ -193,12 +281,14 @@ export async function importBackup(state: AppState, programId: string): Promise<
     day: w.day,
     performed_at: w.date,
     notes: w.notes,
+    readiness: w.readiness ?? null,
     exercises: Object.entries(w.exercises).map(([id, x]) => ({
       exercise_id: id,
       name: x.name,
       weight: x.weight,
       unit: x.unit,
       rir: x.rir,
+      form_ok: x.formOk ?? null,
       reps: x.reps,
     })),
   }));
@@ -209,6 +299,20 @@ export async function importBackup(state: AppState, programId: string): Promise<
     ...(programId === LEGACY_PROGRAM_ID ? {} : { p_program_id: programId }),
   });
   if (error) throw error;
+
+  // Bodyweight belongs to the person, not the program, so a backup adds to it
+  // rather than replacing it.
+  for (const entry of state.bodyweight ?? []) {
+    const result = await supabase.rpc("log_bodyweight", {
+      p_measured_on: entry.date,
+      p_weight: entry.weight,
+    });
+    if (result.error) {
+      if (isMissingV6Schema(result.error)) break;
+      throw result.error;
+    }
+  }
+
   return Number(data ?? 0);
 }
 

@@ -4,14 +4,24 @@
  */
 
 import type { Unit } from "./program";
-import type { AppState, LoggedExercise, StartingWeights, Workout } from "./types";
+import {
+  READINESS_LEVELS,
+  type AppState,
+  type BodyweightEntry,
+  type LoggedExercise,
+  type Readiness,
+  type StartingWeights,
+  type Workout,
+} from "./types";
 
-export const BACKUP_VERSION = 5;
+export const BACKUP_VERSION = 6;
 
 export interface BackupFile {
   version: number;
   starts: StartingWeights;
   workouts: Workout[];
+  /** Added in V6; older files simply have none. */
+  bodyweight?: BodyweightEntry[];
 }
 
 /** Keys the V4/V3/V2 prototypes used in localStorage, newest first. */
@@ -33,6 +43,7 @@ function normaliseExercise(raw: unknown): LoggedExercise | null {
     weight: toNumber(x.weight),
     unit: (typeof x.unit === "string" ? x.unit : "lb") as Unit,
     rir,
+    formOk: typeof x.formOk === "boolean" ? x.formOk : null,
   };
 }
 
@@ -60,7 +71,25 @@ function normaliseWorkout(raw: unknown): Workout | null {
     date,
     exercises,
     notes: typeof w.notes === "string" ? w.notes : "",
+    readiness: READINESS_LEVELS.includes(w.readiness as Readiness)
+      ? (w.readiness as Readiness)
+      : null,
   };
+}
+
+function normaliseBodyweight(raw: unknown): BodyweightEntry[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((entry) => {
+      const e = (entry ?? {}) as Record<string, unknown>;
+      const date = typeof e.date === "string" ? e.date.slice(0, 10) : "";
+      const weight = Number(e.weight);
+      return /^\d{4}-\d{2}-\d{2}$/.test(date) && Number.isFinite(weight) && weight > 0
+        ? { date, weight }
+        : null;
+    })
+    .filter((e): e is BodyweightEntry => e !== null)
+    .sort((a, b) => a.date.localeCompare(b.date));
 }
 
 function normaliseStarts(raw: unknown): StartingWeights {
@@ -103,7 +132,11 @@ export function parseBackup(text: string): AppState {
     .filter((w): w is Workout => w !== null)
     .sort((a, b) => a.date.localeCompare(b.date));
 
-  return { starts: normaliseStarts(data.starts), workouts };
+  return {
+    starts: normaliseStarts(data.starts),
+    workouts,
+    bodyweight: normaliseBodyweight(data.bodyweight),
+  };
 }
 
 export function serialiseBackup(state: AppState): string {
@@ -111,6 +144,7 @@ export function serialiseBackup(state: AppState): string {
     version: BACKUP_VERSION,
     starts: state.starts,
     workouts: state.workouts,
+    bodyweight: state.bodyweight ?? [],
   };
   return JSON.stringify(file, null, 2);
 }

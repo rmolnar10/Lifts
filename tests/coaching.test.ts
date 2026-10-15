@@ -113,6 +113,36 @@ describe("coaching: diagnosing a stall", () => {
   });
 });
 
+describe("coaching: V6 signals", () => {
+  it("flags broken form before anything else about the lift", () => {
+    const history = [workout(HEAVY, "bench", { reps: [8, 8, 8, 8], weight: 135, formOk: false })];
+    const c = coachExercise(find(HEAVY, "bench"), HEAVY, history);
+    expect(c.status).toBe("fix-form");
+    expect(c.instruction).toContain("every rep clean");
+  });
+
+  it("says the load holds on a stall, because Ryan is in a deficit", () => {
+    const history = Array.from({ length: 4 }, () =>
+      workout(HEAVY, "crowH", { reps: [12, 11, 10], weight: 90 }),
+    );
+    const c = coachExercise(find(HEAVY, "crowH"), HEAVY, history);
+    expect(c.status).toBe("stalled");
+    expect(c.instruction).toContain("The load holds");
+  });
+
+  it("names a lift ready for another set", () => {
+    const history = [
+      workout(HEAVY, "crowH", { reps: [10, 9, 8], weight: 90, rir: 2 }),
+      workout(HEAVY, "crowH", { reps: [10, 9, 9], weight: 90, rir: 2 }),
+      workout(HEAVY, "crowH", { reps: [10, 10, 9], weight: 90, rir: 2 }),
+      workout(HEAVY, "crowH", { reps: [11, 10, 9], weight: 90, rir: 2 }),
+    ];
+    const c = coachExercise(find(HEAVY, "crowH"), HEAVY, history);
+    expect(c.status).toBe("add-set");
+    expect(actionItems([c])).toHaveLength(1);
+  });
+});
+
 describe("coaching: the action list", () => {
   it("puts ready-to-progress lifts above stalled ones, worst stall first", () => {
     const items = actionItems([

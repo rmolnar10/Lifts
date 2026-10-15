@@ -46,7 +46,10 @@ describe("parseBackup", () => {
       weight: 135,
       unit: "lb",
       rir: 2,
+      // V4 had no form check, so it reads as "not recorded".
+      formOk: null,
     });
+    expect(first.readiness).toBeNull();
     expect(first.exercises.curl.rir).toBeNull();
     expect(state.workouts[1].exercises.sideplank.unit).toBe("sec");
   });
@@ -109,6 +112,39 @@ describe("serialiseBackup", () => {
     const state: AppState = parseBackup(V4_BACKUP);
     const roundTripped = parseBackup(serialiseBackup(state));
     expect(roundTripped).toEqual(state);
+  });
+
+  it("round-trips readiness, form and bodyweight", () => {
+    const state: AppState = {
+      starts: {},
+      workouts: [
+        {
+          id: "w1",
+          day: "Heavy Upper",
+          date: "2026-03-02T10:00:00.000Z",
+          notes: "",
+          readiness: "rough",
+          exercises: {
+            bench: { name: "Bench Press", reps: [6, 6, 5, 5], weight: 140, unit: "lb", rir: 1, formOk: false },
+          },
+        },
+      ],
+      bodyweight: [
+        { date: "2026-03-01", weight: 182.4 },
+        { date: "2026-03-08", weight: 181 },
+      ],
+    };
+    const back = parseBackup(serialiseBackup(state));
+    expect(back.workouts[0].readiness).toBe("rough");
+    expect(back.workouts[0].exercises.bench.formOk).toBe(false);
+    expect(back.bodyweight).toEqual(state.bodyweight);
+  });
+
+  it("ignores a readiness value it does not recognise", () => {
+    const back = parseBackup(
+      JSON.stringify({ starts: {}, workouts: [{ day: "Heavy Upper", readiness: "wrecked" }] }),
+    );
+    expect(back.workouts[0].readiness).toBeNull();
   });
 
   it("stamps the current backup version", () => {

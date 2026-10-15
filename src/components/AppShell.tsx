@@ -194,7 +194,7 @@ export default function AppShell({ userEmail }: { userEmail: string }) {
         <header>
           <div>
             <h1>Lift Progression Tracker</h1>
-            <div className="muted">V5 — cloud sync, fast logging, RIR, notes, editing</div>
+            <div className="muted">V6 — readiness, form and set-aware progression</div>
           </div>
           <div className="actions" style={{ marginTop: 0 }}>
             <span className="sync">{userEmail}</span>

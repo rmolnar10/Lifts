@@ -33,8 +33,8 @@ The rest needs a human on a real device. See docs/QA_CHECKLIST.md.
 ## Post-V5 — small improvements
 Candidates already identified, none implemented yet (see docs/V5_NOTES.md):
 
-- [ ] Prefill the weight field with the *suggested* load after a load increase,
-      instead of last session's load
+- [x] Prefill the weight field with the *suggested* load after a load increase,
+      instead of last session's load (done in V6)
 - [ ] Label rep PRs with the exercise's own unit (side plank reads "60 reps")
 - [ ] Faster rep entry (auto-advance between set inputs)
 - [ ] Better charts
@@ -42,13 +42,17 @@ Candidates already identified, none implemented yet (see docs/V5_NOTES.md):
 - [ ] Editable workout date
 - [ ] Dark mode
 
-## V6 — Progression Engine
-Only after V5 is stable in real use. Do not start before QA is done.
+## V6 — Progression Engine ✅ built (2026-10-15)
+Rules in docs/PROGRESSION_RULES.md. Needs migration 0006 applied to save the
+new inputs.
 
-- [ ] Use RIR intelligently
-- [ ] Detect fatigue/performance trends
+- [x] Use RIR intelligently (double jumps and faster rep targets at 3+ RIR)
+- [x] Detect fatigue/performance trends (stalls need no rep gain, rough days excused)
+- [x] Readiness, per-exercise form and weekly bodyweight inputs
+- [x] Deficit-aware stalls: hold the load, read bodyweight trend
+- [x] Set-count progression
+- [x] Prefill the planned load after an increase
 - [ ] Exercise-specific load jumps
-- [ ] Better post-load reset targets
 - [ ] More coach-like recommendations
 
 ---
