@@ -8,10 +8,10 @@ accounts, your body, or your judgement.
 ## Switch on V6
 
 - [ ] **Apply the V6 database update.** In the Supabase SQL editor, paste and
-      run, in order: `0004_program_rpcs.sql`, `0005_scoped_reset.sql`,
-      `0006_v6_inputs.sql` (all in `supabase/migrations`). The app works before
-      this, but readiness, form and bodyweight will not save until 0006 is in.
-      0006 refuses to run until 0004 is applied.
+      run `supabase/migrations/0006_v6_inputs.sql`. 0004 and 0005 are already
+      applied (checked 2026-10-15), so nothing else needs re-running. The app
+      works before this, but readiness, form and bodyweight will not save until
+      0006 is in.
 - [ ] **Weigh in once a week** from the Dashboard, same time of day.
 
 ## V6 progression engine: answered 2026-10-15

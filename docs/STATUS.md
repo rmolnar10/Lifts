@@ -52,16 +52,13 @@ All green as of the last commit.
 
 ## Migration state (live project)
 
-`0003_programs.sql` is applied. **`0004_program_rpcs.sql`,
-`0005_scoped_reset.sql` and `0006_v6_inputs.sql` are NOT**, so the app is
-running in its legacy fallback, and readiness, form and bodyweight do not save:
-it reads the built-in program and queries as it did before programs existed.
-Multi-program support switches on as soon as those two files are applied.
+Checked 2026-10-15: `0001` through `0005` are applied, so multi-program
+support is live. **`0006_v6_inputs.sql` is NOT**, so readiness, form and
+bodyweight do not save yet; the app falls back to V5 reads until it is applied.
 
-Apply them by pasting each into the Supabase SQL editor, in order. 0006 refuses
-to run before 0004.
+Apply it by pasting it into the Supabase SQL editor.
 
-> **The Supabase MCP connector cannot apply them.** Any SQL whose text contains
+> **The Supabase MCP connector cannot apply it.** Any SQL whose text contains
 > `DROP` or `DELETE` — including inside a function body — hangs the connector
 > until its 60s timeout, apparently behind a destructive-statement confirmation
 > that never arrives. Plain `CREATE`/`ALTER` goes through fine. Read queries are
@@ -69,8 +66,8 @@ to run before 0004.
 
 ## Outstanding
 
-1. **Apply `0004_program_rpcs.sql`, `0005_scoped_reset.sql` and `0006_v6_inputs.sql`** (see above),
-   then import the Essentials program JSON via Settings → Import a program.
+1. **Apply `0006_v6_inputs.sql`** (see above). If not done yet, import the
+   Essentials program JSON via Settings → Import a program.
 2. **Delete the stale `claude/lifts-v5-supabase-vercel-3iwa63` remote branch.**
    It holds nothing `main` does not. The session's GitHub proxy only allows
    pushes to the current working branch, so `git push --delete` is refused and a
