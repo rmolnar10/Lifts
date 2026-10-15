@@ -16,10 +16,10 @@ import type { ActiveProgram } from "./activeProgram";
 import type { Workout } from "./types";
 
 /**
- * Strength sessions between deloads. At two gym sessions a week, 7 is a deload
- * roughly every three and a half weeks. This is the only number to change.
+ * Strength sessions between deloads. At three gym sessions a week, 10 is a
+ * deload roughly every three and a half weeks. This is the only number to change.
  */
-export const DELOAD_EVERY_N_WORKOUTS = 7;
+export const DELOAD_EVERY_N_WORKOUTS = 10;
 
 export interface DeloadStatus {
   /** Strength sessions logged since the last deload point. */
@@ -54,7 +54,7 @@ export function deloadStatus(
     : workouts;
 
   const total = counted.length;
-  // After 7 strength sessions the 8th is the deload, so this cycles 0..every-1.
+  // After 10 strength sessions the 11th is the deload, so this cycles 0..every-1.
   const sinceDeload = every > 0 ? total % every : 0;
   const due = total > 0 && sinceDeload === 0;
   const remaining = due ? 0 : every - sinceDeload;

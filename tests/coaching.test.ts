@@ -107,9 +107,9 @@ describe("coaching: diagnosing a stall", () => {
   });
 
   it("does not try to load-progress a timed or practice movement", () => {
-    const hold = find("Functional Lower", "hollow");
-    const history = [workout("Functional Lower", "hollow", { reps: [30, 30], weight: 0 })];
-    expect(coachExercise(hold, "Functional Lower", history).status).toBe("untracked");
+    const hold = find("Daily Hips A (Mobility)", "hkhip");
+    const history = [workout("Daily Hips A (Mobility)", "hkhip", { reps: [30, 30], weight: 0 })];
+    expect(coachExercise(hold, "Daily Hips A (Mobility)", history).status).toBe("untracked");
   });
 });
 
@@ -168,10 +168,10 @@ describe("deload reminder", () => {
     const program = activeProgramFromBuiltin();
     const strength = sessions(DELOAD_EVERY_N_WORKOUTS - 1);
     const support = [
-      workout("Hip Mobility", "cossack", { reps: [8, 8] }),
+      workout("Daily Hips A (Mobility)", "cossack", { reps: [8, 8] }),
       workout("Cardio", "zone2", { reps: [35] }),
-      workout("Pelvic Floor", "pfrelax", { reps: [180] }),
-      workout("Functional Lower", "hollow", { reps: [30] }),
+      workout("Daily Hips B (Strength)", "breath360", { reps: [180] }),
+      workout("Intervals", "intervals", { reps: [24] }),
     ];
     // Four extra sessions, none of which should move the counter.
     const status = deloadStatus([...strength, ...support], program);

@@ -5,11 +5,10 @@
  * diverged deliberately. `tests/v4-parity.test.ts` documents every divergence and
  * still proves the progression ENGINE behaves exactly as V4's did.
  *
- * Two gym days carry all the hypertrophy work. Lower-body hypertrophy was
- * deliberately dropped: the priority is hip mobility and pelvic-floor control,
- * which the functional and mobility days serve far better than a loaded leg day,
- * and heavy bracing can work against a hypertonic pelvic floor. The functional,
- * mobility, pelvic-floor and cardio days are logged but never load-progressed.
+ * Three gym days carry the hypertrophy work: two upper and one lower. The lower
+ * day avoids heavy bracing, which can work against a hypertonic pelvic floor,
+ * and hip and pelvic-floor work runs daily as two alternating morning routines.
+ * The daily routines and the cardio days are logged but never load-progressed.
  *
  * Rear delt fly is deliberately absent.
  */
@@ -59,7 +58,7 @@ export const PROGRAM: Program = {
     { id: "wpull", name: "Pull-Up", sets: 3, min: 5, max: 10, type: "bodyweight", unit: "lb", inc: 2.5, reset: 5, rest: 180, targetRpe: [9, 10] },
     { id: "crowH", name: "Seated Cable Row", sets: 3, min: 8, max: 12, type: "isolation", unit: "lb", inc: 5, reset: 8, rest: 120, targetRpe: [9, 10] },
     { id: "shoulder", name: "DB Shoulder Press", sets: 3, min: 6, max: 10, type: "primary", unit: "lb", inc: 5, reset: 6, rest: 150, targetRpe: [8, 9] },
-    { id: "latH", name: "Lateral Raise", sets: 3, min: 8, max: 15, type: "isolation", unit: "lb", inc: 5, reset: 8, rest: 90, targetRpe: [9, 10], dropset: true },
+    { id: "latH", name: "Lateral Raise", sets: 4, min: 8, max: 15, type: "isolation", unit: "lb", inc: 5, reset: 8, rest: 90, targetRpe: [9, 10], dropset: true },
     { id: "tri", name: "Triceps Pushdown", sets: 3, min: 10, max: 15, type: "isolation", unit: "lb", inc: 5, reset: 10, rest: 0, targetRpe: [9, 10], dropset: true, supersetGroup: "A1" },
     { id: "curl", name: "Machine Curl", sets: 3, min: 8, max: 12, type: "isolation", unit: "lb", inc: 5, reset: 8, rest: 90, targetRpe: [9, 10], dropset: true, supersetGroup: "A2" },
   ],
@@ -68,41 +67,58 @@ export const PROGRAM: Program = {
     { id: "fly", name: "Cable Fly", sets: 3, min: 10, max: 15, type: "isolation", unit: "lb", inc: 5, reset: 10, rest: 90, targetRpe: [9, 10] },
     { id: "pull", name: "Pull-Up", sets: 3, min: 6, max: 10, type: "bodyweight", unit: "lb", inc: 2.5, reset: 6, rest: 150, targetRpe: [9, 10] },
     { id: "crowV", name: "Seated Cable Row", sets: 2, min: 10, max: 15, type: "isolation", unit: "lb", inc: 5, reset: 10, rest: 120, targetRpe: [9, 10] },
-    { id: "latV", name: "Lateral Raise", sets: 3, min: 8, max: 15, type: "isolation", unit: "lb", inc: 5, reset: 8, rest: 90, targetRpe: [9, 10], dropset: true },
+    { id: "latV", name: "Lateral Raise", sets: 4, min: 8, max: 15, type: "isolation", unit: "lb", inc: 5, reset: 8, rest: 90, targetRpe: [9, 10], dropset: true },
     { id: "hammer", name: "Hammer Curl", sets: 3, min: 8, max: 12, type: "isolation", unit: "lb", inc: 5, reset: 8, rest: 0, targetRpe: [9, 10], dropset: true, supersetGroup: "A1" },
     { id: "ohtri", name: "Overhead Triceps Extension", sets: 3, min: 10, max: 15, type: "isolation", unit: "lb", inc: 5, reset: 10, rest: 90, targetRpe: [9, 10], dropset: true, supersetGroup: "A2" },
     { id: "hlr", name: "Hanging Leg Raise", sets: 3, min: 8, max: 15, type: "quality", unit: "reps", inc: 0, reset: 8, rest: 90 },
   ],
+  // Lower-body hypertrophy, chosen to need as little bracing as possible: one
+  // unilateral squat, one light hinge, and machines you can breathe through.
+  // Efforts stay at RPE 7-9 with no dropsets, exhaling on every effort, so the
+  // work never fights the pelvic-floor goal. Roughly 6 sets a week per leg muscle.
+  "Lower": [
+    { id: "splitsquat", name: "DB Bulgarian Split Squat", sets: 3, min: 8, max: 12, type: "primary", unit: "lb", inc: 5, reset: 8, rest: 120, targetRpe: [7, 8], perSide: true },
+    { id: "dbrdl", name: "DB Romanian Deadlift", sets: 3, min: 8, max: 12, type: "primary", unit: "lb", inc: 5, reset: 8, rest: 120, targetRpe: [7, 8] },
+    { id: "legext", name: "Leg Extension", sets: 3, min: 10, max: 15, type: "isolation", unit: "lb", inc: 5, reset: 10, rest: 90, targetRpe: [8, 9] },
+    { id: "seatcurl", name: "Seated Leg Curl", sets: 3, min: 10, max: 15, type: "isolation", unit: "lb", inc: 5, reset: 10, rest: 90, targetRpe: [8, 9] },
+    { id: "hipabd", name: "Hip Abduction Machine", sets: 2, min: 12, max: 20, type: "isolation", unit: "lb", inc: 5, reset: 12, rest: 60, targetRpe: [8, 9] },
+    { id: "hipadd", name: "Hip Adduction Machine", sets: 2, min: 12, max: 20, type: "isolation", unit: "lb", inc: 5, reset: 12, rest: 60, targetRpe: [7, 8] },
+  ],
   // Everything below is logged but never load-progressed: the point is control,
   // range of motion and consistency, not overload.
-  "Functional Lower": [
-    { id: "sidelunge", name: "Side Lunge", sets: 3, min: 8, max: 10, type: "quality", unit: "reps", inc: 0, reset: 8, rest: 60, perSide: true },
-    { id: "bandsquat", name: "Banded Squat", sets: 3, min: 8, max: 15, type: "quality", unit: "reps", inc: 0, reset: 8, rest: 60 },
-    { id: "slbridge", name: "Single-Leg Glute Bridge", sets: 3, min: 8, max: 12, type: "quality", unit: "reps", inc: 0, reset: 8, rest: 60, perSide: true },
-    { id: "bandleglift", name: "Banded Leg Lift", sets: 2, min: 10, max: 15, type: "quality", unit: "reps", inc: 0, reset: 10, rest: 45, perSide: true },
-    { id: "hkhip", name: "Half-Kneeling Hip Mobility", sets: 2, min: 30, max: 45, type: "timed", unit: "sec", inc: 0, reset: 30, rest: 30, perSide: true },
-    { id: "splankhip", name: "Side Plank + Banded Hip Raise", sets: 2, min: 8, max: 15, type: "quality", unit: "reps", inc: 0, reset: 8, rest: 45, perSide: true },
-    { id: "bandham", name: "Banded Hamstring Curl", sets: 3, min: 10, max: 15, type: "quality", unit: "reps", inc: 0, reset: 10, rest: 60 },
-    { id: "pigeonraise", name: "Pigeon Raise", sets: 2, min: 8, max: 15, type: "quality", unit: "reps", inc: 0, reset: 8, rest: 45, perSide: true },
-    { id: "monster", name: "Monster Steps", sets: 2, min: 10, max: 15, type: "quality", unit: "reps", inc: 0, reset: 10, rest: 45, perSide: true },
-    { id: "hollow", name: "Hollow Hold", sets: 3, min: 15, max: 30, type: "timed", unit: "sec", inc: 0, reset: 15, rest: 45 },
-    { id: "breath360", name: "360° Breathing / Reverse Kegel", sets: 1, min: 120, max: 180, type: "practice", unit: "sec", inc: 0, reset: 120, rest: 0 },
-  ],
-  "Hip Mobility": [
+  //
+  // The two daily routines alternate as a morning session, so hip and
+  // pelvic-floor work happens every day instead of once a week each. A is
+  // mobility and down-training; B is hip strength and control. Both end on
+  // pelvic-floor relaxation.
+  "Daily Hips A (Mobility)": [
     { id: "scissor9090", name: "90/90 Scissor", sets: 2, min: 6, max: 8, type: "quality", unit: "reps", inc: 0, reset: 6, rest: 30, perSide: true },
     { id: "rollerstep", name: "Foam-Roller Step-Over", sets: 2, min: 8, max: 10, type: "quality", unit: "reps", inc: 0, reset: 8, rest: 30, perSide: true },
     { id: "pigeonpush", name: "Unweighted Pigeon Push-Up", sets: 2, min: 6, max: 10, type: "quality", unit: "reps", inc: 0, reset: 6, rest: 30, perSide: true },
     { id: "stepthru", name: "Step-Through Lunge", sets: 2, min: 6, max: 8, type: "quality", unit: "reps", inc: 0, reset: 6, rest: 30, perSide: true },
     { id: "cossack", name: "Cossack Squat Shift", sets: 2, min: 6, max: 8, type: "quality", unit: "reps", inc: 0, reset: 6, rest: 30, perSide: true },
-  ],
-  "Pelvic Floor": [
-    { id: "bridgeknee", name: "Bridge + Alternating Knee Lift", sets: 2, min: 8, max: 10, type: "quality", unit: "reps", inc: 0, reset: 8, rest: 45, perSide: true },
-    { id: "supine90", name: "Supine 90° Leg/Hip Movement", sets: 2, min: 8, max: 10, type: "quality", unit: "reps", inc: 0, reset: 8, rest: 45, perSide: true },
+    { id: "hkhip", name: "Half-Kneeling Hip Mobility", sets: 2, min: 30, max: 45, type: "timed", unit: "sec", inc: 0, reset: 30, rest: 30, perSide: true },
     { id: "beardog", name: "Bear Hold → Downward Dog", sets: 2, min: 5, max: 8, type: "quality", unit: "reps", inc: 0, reset: 5, rest: 45 },
     { id: "pfrelax", name: "360° Breathing / Pelvic-Floor Relaxation", sets: 1, min: 120, max: 180, type: "practice", unit: "sec", inc: 0, reset: 120, rest: 0 },
   ],
+  "Daily Hips B (Strength)": [
+    { id: "sidelunge", name: "Side Lunge", sets: 2, min: 8, max: 10, type: "quality", unit: "reps", inc: 0, reset: 8, rest: 45, perSide: true },
+    { id: "slbridge", name: "Single-Leg Glute Bridge", sets: 2, min: 8, max: 12, type: "quality", unit: "reps", inc: 0, reset: 8, rest: 45, perSide: true },
+    { id: "bridgeknee", name: "Bridge + Alternating Knee Lift", sets: 2, min: 8, max: 10, type: "quality", unit: "reps", inc: 0, reset: 8, rest: 45, perSide: true },
+    { id: "splankhip", name: "Side Plank + Banded Hip Raise", sets: 2, min: 8, max: 15, type: "quality", unit: "reps", inc: 0, reset: 8, rest: 45, perSide: true },
+    { id: "pigeonraise", name: "Pigeon Raise", sets: 2, min: 8, max: 15, type: "quality", unit: "reps", inc: 0, reset: 8, rest: 45, perSide: true },
+    { id: "monster", name: "Monster Steps", sets: 2, min: 10, max: 15, type: "quality", unit: "reps", inc: 0, reset: 10, rest: 45, perSide: true },
+    { id: "supine90", name: "Supine 90° Leg/Hip Movement", sets: 2, min: 8, max: 10, type: "quality", unit: "reps", inc: 0, reset: 8, rest: 45, perSide: true },
+    { id: "deadbug", name: "Dead Bug (exhale on each rep)", sets: 2, min: 6, max: 10, type: "quality", unit: "reps", inc: 0, reset: 6, rest: 45, perSide: true },
+    { id: "breath360", name: "360° Breathing / Reverse Kegel", sets: 1, min: 120, max: 180, type: "practice", unit: "sec", inc: 0, reset: 120, rest: 0 },
+  ],
+  // About 150 min of zone 2 a week over 3-4 sessions, plus one interval session.
+  // Keep the intervals away from the morning before an upper day.
   "Cardio": [
     { id: "zone2", name: "Zone 2 Cardio", sets: 1, min: 30, max: 45, type: "timed", unit: "min", inc: 0, reset: 30, rest: 0 },
+  ],
+  "Intervals": [
+    { id: "intervals", name: "Intervals (4×4 min hard or 8×30 s sprints)", sets: 1, min: 20, max: 30, type: "timed", unit: "min", inc: 0, reset: 20, rest: 0 },
   ],
 };
 

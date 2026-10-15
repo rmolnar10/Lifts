@@ -1,6 +1,21 @@
 # Changelog
 
 ## Post-V5 fixes
+- Leg day back, hip work daily, cardio structured (2026-10-15):
+  - New Lower day built to need little bracing: DB Bulgarian Split Squat and
+    DB Romanian Deadlift 3x8-12 at RPE 7-8, Leg Extension and Seated Leg Curl
+    3x10-15, Hip Abduction and Adduction machines 2x12-20. No dropsets, nothing
+    taken to failure. About 6 sets a week for quads, hamstrings and glutes.
+  - Functional Lower, Hip Mobility and Pelvic Floor folded into two alternating
+    morning routines: Daily Hips A (Mobility) and Daily Hips B (Strength). Both
+    end on pelvic-floor relaxation. Hollow Hold became Dead Bug, and the banded
+    squat, leg lift and hamstring curl went, since Lower now covers them.
+  - Lateral raises 3 -> 4 sets on both upper days; side delts 6 -> 8 sets/week.
+  - An Intervals day joins Cardio (zone 2). The target is about 150 min of
+    zone 2 over 3-4 sessions plus one interval session a week.
+  - Deload reminder every 10 strength sessions (was 7), so it still lands about
+    every three and a half weeks now there are three gym days.
+  - History logged under the folded days is preserved and still shows.
 - Program restructured around the real priorities (2026-10-09):
   - Lower-body hypertrophy dropped. The stated priority is hip mobility and
     pelvic-floor control; a loaded leg day serves that poorly, heavy bracing can
