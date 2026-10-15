@@ -3,7 +3,7 @@
 Living handoff note. Update it when the deployment or the plan changes — a new
 Claude session reads this first to know where things stand.
 
-_Last updated: 2026-08-27_
+_Last updated: 2026-10-15_
 
 ---
 
@@ -52,12 +52,15 @@ All green as of the last commit.
 
 ## Migration state (live project)
 
-`0003_programs.sql` is applied. **`0004_program_rpcs.sql` and
-`0005_scoped_reset.sql` are NOT**, so the app is running in its legacy fallback:
-it reads the built-in program and queries as it did before programs existed.
-Multi-program support switches on as soon as those two files are applied.
+All five migrations (`0001`–`0005`) are applied, verified 2026-10-15 by reading
+the live catalog: the program-aware RPC signatures exist, the pre-program ones
+and `user_exercise_settings_legacy_unique` are gone. The app runs on the
+database program (`lifts-3day` active, last re-imported 2026-10-09 with the
+Functional Lower and Cardio days; `essentials-3x` also imported). Every workout
+and starting weight carries a `program_id`, so no history is orphaned.
 
-Apply them by pasting each into the Supabase SQL editor, in order.
+Future migrations that contain `DROP` or `DELETE` still have to be pasted into
+the Supabase SQL editor:
 
 > **The Supabase MCP connector cannot apply them.** Any SQL whose text contains
 > `DROP` or `DELETE` — including inside a function body — hangs the connector
@@ -67,9 +70,7 @@ Apply them by pasting each into the Supabase SQL editor, in order.
 
 ## Outstanding
 
-1. **Apply `0004_program_rpcs.sql` and `0005_scoped_reset.sql`** (see above),
-   then import the Essentials program JSON via Settings → Import a program.
-2. **Delete the stale `claude/lifts-v5-supabase-vercel-3iwa63` remote branch.**
+1. **Delete the stale `claude/lifts-v5-supabase-vercel-3iwa63` remote branch.**
    It holds nothing `main` does not. The session's GitHub proxy only allows
    pushes to the current working branch, so `git push --delete` is refused and a
    session cannot remove it — do it from the repo's Branches page on GitHub.
