@@ -2,6 +2,8 @@
 
 A personal [WHOOP MCP server](https://github.com/shashankswe2020-ux/whoop-mcp) (v0.9.1, MIT) on a Hetzner VPS, so Claude on web, iOS and in Projects can read recovery, HRV, sleep, strain and workouts. Read-only, official WHOOP API.
 
+The installer applies `multi-session.patch` on top of upstream. Without it the server's HTTP mode serves only one MCP session per process, so every claude.ai chat after the first fails with "Server already initialized" until a restart.
+
 ## Before you run it
 
 1. **WHOOP developer app.** At [developer.whoop.com](https://developer.whoop.com), create an app:
