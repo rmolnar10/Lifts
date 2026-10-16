@@ -122,9 +122,16 @@ describe("draft rejection", () => {
 
   it("discards a draft whose set count no longer matches the program", () => {
     const draft = fullDraft();
-    draft.forms.bench.reps = ["8", "8"]; // bench is 4 sets
+    draft.forms.bench.reps = Array.from({ length: 9 }, () => "8"); // bench is 4 sets
     writeDraft(ACCOUNT, PROG.id, null, draft);
     expect(readDraft(ACCOUNT, PROG, HEAVY, null)).toBeNull();
+  });
+
+  it("keeps a draft whose set count grew or shrank within reason", () => {
+    const draft = fullDraft();
+    draft.forms.bench.reps = ["8", "8", "8", "8", "6"]; // an added fifth set
+    writeDraft(ACCOUNT, PROG.id, null, draft);
+    expect(readDraft(ACCOUNT, PROG, HEAVY, null)).not.toBeNull();
   });
 
   it("discards a draft that is missing an exercise", () => {

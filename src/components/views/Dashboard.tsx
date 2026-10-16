@@ -1,16 +1,25 @@
 "use client";
 
 import { exercisesForDay } from "@/lib/activeProgram";
-import { suggest } from "@/lib/progression";
+import { planNext } from "@/lib/engine";
 import { calcPRs, totalVolume } from "@/lib/stats";
 import { deloadStatus } from "@/lib/deload";
 import type { SharedViewProps } from "@/components/AppShell";
+import BodyweightCard from "@/components/BodyweightCard";
 
 interface Props extends SharedViewProps {
   onStartWorkout: (day: string) => void;
 }
 
-export default function Dashboard({ state, day, setDay, program, onStartWorkout }: Props) {
+export default function Dashboard({
+  state,
+  day,
+  setDay,
+  program,
+  onStartWorkout,
+  refresh,
+  setError,
+}: Props) {
   const { workouts, starts } = state;
   const volume = totalVolume(workouts);
   const last = workouts.length ? workouts[workouts.length - 1] : null;
@@ -52,7 +61,7 @@ export default function Dashboard({ state, day, setDay, program, onStartWorkout 
           ))}
         </div>
         {exercisesForDay(program, day).map((exercise) => {
-          const s = suggest(exercise, day, workouts, starts);
+          const s = planNext(exercise, day, workouts, starts, { bodyweight: state.bodyweight });
           return (
             <div className="target" key={exercise.id}>
               <b>{exercise.name}</b> — {s.target}
@@ -67,6 +76,13 @@ export default function Dashboard({ state, day, setDay, program, onStartWorkout 
           </button>
         </div>
       </div>
+
+      <BodyweightCard
+        entries={state.bodyweight ?? []}
+        available={state.v6Inputs !== false}
+        refresh={refresh}
+        setError={setError}
+      />
 
       <div className="grid">
         <div className="card">
@@ -89,7 +105,7 @@ export default function Dashboard({ state, day, setDay, program, onStartWorkout 
           <h3>Training focus</h3>
           <p className="muted">
             {workouts.length
-              ? "Keep compounds controlled and close to failure without forcing ugly reps. The app will push the weakest set first."
+              ? "Keep compounds controlled and close to failure without forcing ugly reps. Tap how you feel at the start and whether form held on each lift: the targets adapt to both."
               : "Enter starting weights and complete your first workout to establish baselines."}
           </p>
         </div>

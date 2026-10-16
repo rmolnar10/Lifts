@@ -1,5 +1,22 @@
 # Changelog
 
+## V6 — progression engine (2026-10-15)
+- New engine (`src/lib/engine.ts`) tuned to a late novice in a deficit
+  (`src/lib/athlete.ts`). The V4 rule stays underneath, still pinned by the
+  parity suite. Rules in docs/PROGRESSION_RULES.md.
+- Workout screen: a readiness tap (rough / normal / good), a form held / form
+  broke toggle per exercise, and add / remove set buttons. A rough day holds
+  every target at last session's numbers.
+- Dashboard: weekly bodyweight card. The trend feeds the stall advice.
+- Progress: "Fix form" and "Add a set" join "Add load" and "Stalled", and stall
+  advice says the load holds in a deficit.
+- The weight box now starts at the planned load (after an increase, a form
+  back-off or a rough day) rather than last session's.
+- Migration 0006: `workouts.readiness`, `workout_exercises.form_ok`, a
+  `body_metrics` table, and `log_bodyweight` / `set_workout_readiness` RPCs.
+  The app keeps working without it; the new inputs just do not save.
+- Backups (version 6) carry readiness, form and bodyweight.
+
 ## Post-V5 fixes
 - Program restructured around the real priorities (2026-10-09):
   - Lower-body hypertrophy dropped. The stated priority is hip mobility and

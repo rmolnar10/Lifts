@@ -12,6 +12,8 @@ import type { AppState } from "@/lib/types";
 
 function StatusBadge({ status }: { status: ExerciseCoaching["status"] }) {
   if (status === "add-load") return <span className="badge">Add load</span>;
+  if (status === "fix-form") return <span className="badge warn-badge">Fix form</span>;
+  if (status === "add-set") return <span className="badge">Add a set</span>;
   if (status === "stalled") return <span className="badge warn-badge">Stalled</span>;
   if (status === "building") return <span className="badge">On track</span>;
   return null;
@@ -41,7 +43,9 @@ export default function ProgressView({
 
   const [day, exerciseId] = selected.split("|");
   const exercise = day && exerciseId ? findExerciseIn(program, day, exerciseId) : undefined;
-  const detail = exercise ? coachExercise(exercise, day, state.workouts) : null;
+  const detail = exercise
+    ? coachExercise(exercise, day, state.workouts, { bodyweight: state.bodyweight })
+    : null;
   const rows = state.workouts.filter((w) => w.day === day && w.exercises[exerciseId]).slice(-12);
 
   return (
@@ -73,6 +77,7 @@ export default function ProgressView({
                   {item.day} — {item.headline}
                 </div>
                 <div className="small">{item.instruction}</div>
+                {item.note ? <div className="small muted">{item.note}</div> : null}
               </li>
             ))}
           </ul>
@@ -131,6 +136,7 @@ export default function ProgressView({
             <p className="small" style={{ marginTop: 4 }}>
               {detail.instruction}
             </p>
+            {detail.note ? <p className="small muted">{detail.note}</p> : null}
 
             <SetRepsChart history={detail.history} exercise={exercise} />
             <LoadTrendChart history={detail.history} exercise={exercise} />

@@ -5,25 +5,32 @@ accounts, your body, or your judgement.
 
 ---
 
-## Blocking the V6 progression engine
+## Switch on V6
 
-These four answers change what gets built. The cascade in the research doc is
-tuned to assumptions I made; if any are wrong, the rules are wrong.
+- [ ] **Apply the V6 database update.** In the Supabase SQL editor, paste and
+      run `supabase/migrations/0006_v6_inputs.sql`. 0004 and 0005 are already
+      applied (checked 2026-10-15), so nothing else needs re-running. The app
+      works before this, but readiness, form and bodyweight will not save until
+      0006 is in.
+- [ ] **Weigh in once a week** from the Dashboard, same time of day.
 
-- [ ] **How long have you been lifting, and how long on this program?**
-      Rules 03 (RIR-scaled load jumps) and 04 (stall back-off) are tuned to
-      intermediate rates. A beginner should progress faster and stall later, and
-      firing a back-off after 3 sessions would be actively wrong.
-- [ ] **Are you eating in a surplus, at maintenance, or in a deficit?**
-      Decides whether a stall means "back off the load" or "eat more". In a
-      deficit, rule 04 would misdiagnose under-eating as accumulated fatigue and
-      keep reducing your weights.
-- [ ] **Are these three additions acceptable?** Each is one tap or one entry:
+## V6 progression engine: answered 2026-10-15
+
+All four blockers are answered, and V6 is built on these answers
+(`src/lib/athlete.ts`; rules in `docs/PROGRESSION_RULES.md`).
+
+- [x] **Training age:** about 6 months of consistent lifting, 1.5 to 2 months
+      on this program. Treat as a late novice, not an intermediate: rules 03
+      (RIR-scaled load jumps) and 04 (stall back-off) need faster progression
+      and a later, more conservative stall trigger than the intermediate tuning.
+- [x] **Energy balance:** eating in a **deficit**. A stall must not be read as
+      accumulated fatigue by default; rule 04 should hold the load (and flag
+      intake) before it ever reduces weights.
+- [x] **New inputs:** yes to all three.
       - readiness at workout start (rough / normal / good)
       - form held vs form broke down, per exercise
       - bodyweight, weekly
-- [ ] **Do you want set-count progression?** Biggest hypertrophy lever
-      available, biggest change to build (schema + UI + engine). Fine to defer.
+- [x] **Set-count progression:** yes, build it in V6 (schema + UI + engine).
 
 ## Housekeeping
 

@@ -17,6 +17,7 @@ export interface RetiredExercisePayload {
   weight: number;
   unit: Unit;
   rir: number | null;
+  form_ok: boolean | null;
   reps: number[];
 }
 
@@ -40,6 +41,7 @@ export function retiredExercisePayloads(
       weight: performed.weight,
       unit: performed.unit,
       rir: performed.rir,
+      form_ok: performed.formOk ?? null,
       reps: performed.reps,
     }));
 }

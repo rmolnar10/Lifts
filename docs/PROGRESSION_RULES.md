@@ -55,5 +55,36 @@ by the overhead triceps extension because an unprogressed optional slot left
 direct triceps volume at 3 sets/week against 6 for biceps. The engine still
 supports the type if a future program needs it.
 
-## RIR
-RIR is currently an input/guardrail. Future V6 can use RIR to refine progression.
+## V6 engine (`src/lib/engine.ts`)
+
+The rules above are still the base (`progression.ts`, pinned to V4 by the
+parity suite). V6 wraps them for the load-progressed types (primary, isolation,
+bodyweight) and reads four extra signals: readiness at the start of the
+session, whether form held, RIR on the final set, and weekly bodyweight.
+
+Tuned to the lifter in `src/lib/athlete.ts`: **late novice** (about 6 months
+lifting) and **eating in a deficit**. Change that file when either changes.
+
+The cascade, first match wins:
+
+1. **Rough day today** — repeat last session's load and reps, no increases,
+   stop sets at 2–3 RIR, skip any added sets. A rough session never counts
+   against a lift: it is ignored when judging stalls and progress streaks.
+2. **Form broke down last session** — hold the load and repeat the numbers
+   cleanly. Twice running at the same load: drop one increment.
+3. **Every set at the top of the range** — add load, back to the program's set
+   count. Two increments when the final set had 3+ RIR (late novice), one
+   otherwise. Unrecorded form counts as held, so pre-V6 history works as before.
+4. **Stalled** — 4 sessions at one load with no rep gained (late novice; an
+   intermediate would be 3). In a **deficit** the load holds, any added set is
+   dropped, and bodyweight is read to say whether the cut is too fast. In a
+   surplus or at maintenance, back off about 10% and rebuild.
+5. **Set-count progression** — after 3 sessions of progress in a row at one
+   load (2 in a surplus), with form holding and the last set not at 0 RIR, add
+   a set. Cap: one extra set in a deficit (two for accessories in a surplus).
+   The set count resets when load goes up.
+6. **Building** — one clean rep on the weakest set; a rep on every short set
+   when the final set had 3+ RIR.
+
+The lifter can always add or remove a set on the workout screen; the engine
+reads whatever was logged.

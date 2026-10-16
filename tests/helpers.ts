@@ -23,6 +23,7 @@ export function workout(
         weight: performance.weight ?? 0,
         unit: performance.unit ?? "lb",
         rir: performance.rir ?? null,
+        ...(performance.formOk !== undefined ? { formOk: performance.formOk } : {}),
       },
     },
     notes: "",

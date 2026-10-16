@@ -3,7 +3,7 @@
 Living handoff note. Update it when the deployment or the plan changes — a new
 Claude session reads this first to know where things stand.
 
-_Last updated: 2026-08-27_
+_Last updated: 2026-10-15_
 
 ---
 
@@ -23,9 +23,9 @@ Supabase, and the first workouts have been logged through it.
 ## Verification
 
 ```bash
-npm test        # 58 unit tests: progression, V4 parity, backup, drafts, view rendering
-npm run qa      # 30 end-to-end checks in a real browser, mobile + desktop
-npm run test:db # 13 checks: migrations, RLS isolation, cascades, anon lockout
+npm test        # 138 unit tests: V6 engine, progression, V4 parity, backup, drafts, views
+npm run qa      # 44 end-to-end checks in a real browser, mobile + desktop
+npm run test:db # migrations, RLS isolation, cascades, anon lockout, V6 inputs
 npm run typecheck && npm run lint && npm run build
 ```
 
@@ -52,14 +52,13 @@ All green as of the last commit.
 
 ## Migration state (live project)
 
-`0003_programs.sql` is applied. **`0004_program_rpcs.sql` and
-`0005_scoped_reset.sql` are NOT**, so the app is running in its legacy fallback:
-it reads the built-in program and queries as it did before programs existed.
-Multi-program support switches on as soon as those two files are applied.
+Checked 2026-10-15: `0001` through `0005` are applied, so multi-program
+support is live. **`0006_v6_inputs.sql` is NOT**, so readiness, form and
+bodyweight do not save yet; the app falls back to V5 reads until it is applied.
 
-Apply them by pasting each into the Supabase SQL editor, in order.
+Apply it by pasting it into the Supabase SQL editor.
 
-> **The Supabase MCP connector cannot apply them.** Any SQL whose text contains
+> **The Supabase MCP connector cannot apply it.** Any SQL whose text contains
 > `DROP` or `DELETE` — including inside a function body — hangs the connector
 > until its 60s timeout, apparently behind a destructive-statement confirmation
 > that never arrives. Plain `CREATE`/`ALTER` goes through fine. Read queries are
@@ -67,8 +66,8 @@ Apply them by pasting each into the Supabase SQL editor, in order.
 
 ## Outstanding
 
-1. **Apply `0004_program_rpcs.sql` and `0005_scoped_reset.sql`** (see above),
-   then import the Essentials program JSON via Settings → Import a program.
+1. **Apply `0006_v6_inputs.sql`** (see above). If not done yet, import the
+   Essentials program JSON via Settings → Import a program.
 2. **Delete the stale `claude/lifts-v5-supabase-vercel-3iwa63` remote branch.**
    It holds nothing `main` does not. The session's GitHub proxy only allows
    pushes to the current working branch, so `git push --delete` is refused and a
@@ -103,8 +102,10 @@ and `lifts-git-main-rmolnar11.vercel.app` sit behind Vercel SSO
 
 ## Ground rules
 
-- The V6 engine (RIR-aware, trend-aware) is designed but NOT built. See the
-  research doc; `docs/TODO.md` lists the four answers that unblock it.
+- The V6 engine is built (`src/lib/engine.ts`, rules in
+  `docs/PROGRESSION_RULES.md`) and tuned in `src/lib/athlete.ts` to a late
+  novice in a deficit. Update that file when training age or diet changes.
+  Views use `planNext()`; `suggest()` is the V4 base rule the parity suite pins.
 - The program is now ours to tune. `tests/v4-parity.test.ts` pins the *engine*
   to V4's behaviour using V4's own exercise definitions, and separately asserts
   the program differs from V4 only where `INTENTIONAL_PROGRAM_CHANGES` says.

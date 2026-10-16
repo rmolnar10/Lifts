@@ -24,13 +24,22 @@ export interface DraftForm {
   weight: string;
   rir: string;
   reps: string[];
+  /** "held", "broke", or "" when not recorded. Absent in pre-V6 drafts. */
+  form?: FormCheck;
 }
+
+export type FormCheck = "" | "held" | "broke";
+
+/** Most sets a draft may carry beyond the program's own: room for added sets. */
+export const MAX_EXTRA_SETS = 3;
 
 export interface WorkoutDraft {
   savedAt: string;
   day: string;
   forms: Record<string, DraftForm>;
   notes: string;
+  /** Readiness tapped at the start. Absent in pre-V6 drafts. */
+  readiness?: string;
 }
 
 /**
@@ -57,9 +66,11 @@ function storage(): Storage | null {
 }
 
 /**
- * A draft is only usable if it still matches the program: same exercises, same
- * set counts. If the program changes underneath it, discard rather than
- * rendering a form with missing or extra rows.
+ * A draft is only usable if it still matches the program: same exercises, and
+ * a plausible set count. Set counts can now grow and shrink session to session,
+ * so anything from one set up to a few beyond the program's count is accepted.
+ * If the program changes underneath it, discard rather than rendering a form
+ * with missing rows.
  */
 function matchesProgram(draft: WorkoutDraft, program: ActiveProgram): boolean {
   const exercises = exercisesForDay(program, draft.day);
@@ -69,7 +80,8 @@ function matchesProgram(draft: WorkoutDraft, program: ActiveProgram): boolean {
     return (
       form !== undefined &&
       Array.isArray(form.reps) &&
-      form.reps.length === exercise.sets &&
+      form.reps.length >= 1 &&
+      form.reps.length <= exercise.sets + MAX_EXTRA_SETS &&
       typeof form.weight === "string" &&
       typeof form.rir === "string"
     );

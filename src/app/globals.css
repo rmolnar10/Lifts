@@ -349,3 +349,15 @@ td {
     padding: 10px 10px 90px;
   }
 }
+
+/* Segmented one-tap choices: readiness, form, set count. */
+.seg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.seg button {
+  min-height: 40px;
+}

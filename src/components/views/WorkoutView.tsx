@@ -3,17 +3,20 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { UNWEIGHTED_TYPES, type Exercise } from "@/lib/program";
 import { exercisesForDay, targetRirLabel } from "@/lib/activeProgram";
-import { previousPerformance, suggest } from "@/lib/progression";
+import { previousPerformance } from "@/lib/progression";
+import { planNext } from "@/lib/engine";
 import { saveWorkout, type ExercisePayload } from "@/lib/data";
 import { retiredExercisePayloads } from "@/lib/retired";
 import { deloadStatus } from "@/lib/deload";
 import type { SharedViewProps } from "@/components/AppShell";
-import type { LoggedExercise } from "@/lib/types";
+import { READINESS_LEVELS, type LoggedExercise, type Readiness } from "@/lib/types";
 import {
   clearDraft,
   describeAge,
+  MAX_EXTRA_SETS,
   readDraft,
   writeDraft,
+  type FormCheck,
   type WorkoutDraft,
 } from "@/lib/draft";
 
@@ -30,29 +33,53 @@ interface ExerciseForm {
   weight: string;
   rir: string;
   reps: string[];
+  form?: FormCheck;
 }
 
 const takesWeight = (exercise: Exercise) => !UNWEIGHTED_TYPES.includes(exercise.type);
 
+/** Form is worth checking wherever there is a rep to do badly. */
+const checksForm = (exercise: Exercise) =>
+  !["timed", "practice", "optional"].includes(exercise.type);
+
+const READINESS_LABEL: Record<Readiness, string> = {
+  rough: "Rough",
+  normal: "Normal",
+  good: "Good",
+};
+
 /** A blank form, used if an exercise somehow has no entry yet. */
 function emptyForm(exercise: Exercise): ExerciseForm {
-  return { weight: "", rir: "", reps: Array.from({ length: exercise.sets }, () => "") };
+  return { weight: "", rir: "", reps: Array.from({ length: exercise.sets }, () => ""), form: "" };
+}
+
+/** `reps` resized to `sets`, keeping what is there and leaving new sets blank. */
+function resize(reps: string[], sets: number): string[] {
+  return Array.from({ length: sets }, (_, i) => reps[i] ?? "");
 }
 
 function initialForm(
   exercise: Exercise,
   previous: LoggedExercise | null,
-  suggestedWeight: number | "",
+  plannedWeight: number | "",
+  sets: number,
+  editing: boolean,
 ): ExerciseForm {
-  const weight = takesWeight(exercise)
-    ? String(previous?.weight ?? suggestedWeight ?? "")
-    : "";
+  // A new workout starts from the engine's load, so a planned increase or a
+  // back-off is already in the box; an edit shows exactly what was saved.
+  const weight = !takesWeight(exercise)
+    ? ""
+    : editing
+      ? String(previous?.weight ?? "")
+      : String(plannedWeight !== "" ? plannedWeight : (previous?.weight ?? ""));
+  const formOk = editing ? previous?.formOk : null;
   return {
     weight,
     rir: previous?.rir === null || previous?.rir === undefined ? "" : String(previous.rir),
-    reps: Array.from({ length: exercise.sets }, (_, i) =>
+    reps: Array.from({ length: sets }, (_, i) =>
       previous?.reps?.[i] === undefined ? "" : String(previous.reps[i]),
     ),
+    form: formOk === true ? "held" : formOk === false ? "broke" : "",
   };
 }
 
@@ -76,24 +103,45 @@ export default function WorkoutView({
   // defaults — that is the whole point of it.
   const [restored] = useState<WorkoutDraft | null>(() => readDraft(account, program, day, editingId));
 
+  const [readiness, setReadiness] = useState<Readiness | null>(() => {
+    const saved = restored?.readiness ?? editing?.readiness ?? null;
+    return READINESS_LEVELS.includes(saved as Readiness) ? (saved as Readiness) : null;
+  });
+
+  const planFor = useCallback(
+    (exercise: Exercise, today: Readiness | null) =>
+      planNext(exercise, day, workouts, starts, {
+        readinessToday: today,
+        bodyweight: state.bodyweight,
+      }),
+    [day, workouts, starts, state.bodyweight],
+  );
+
   /**
-   * The inputs as they look with no draft: last session's performance when
-   * logging a new workout (exactly as in V4), or the saved values when editing.
+   * The inputs as they look with no draft: last session's performance with the
+   * engine's load and set count when logging a new workout, or the saved values
+   * when editing.
    */
-  const computeDefaults = useCallback((): Record<string, ExerciseForm> => {
-    const defaults: Record<string, ExerciseForm> = {};
-    for (const exercise of exercisesForDay(program, day)) {
-      const previous = editing
-        ? (editing.exercises[exercise.id] ?? null)
-        : previousPerformance(workouts, day, exercise.id);
-      const suggestion = suggest(exercise, day, workouts, starts);
-      defaults[exercise.id] = initialForm(exercise, previous, suggestion.weight);
-    }
-    return defaults;
-  }, [day, editing, workouts, starts, program]);
+  const computeDefaults = useCallback(
+    (today: Readiness | null = null): Record<string, ExerciseForm> => {
+      const defaults: Record<string, ExerciseForm> = {};
+      for (const exercise of exercisesForDay(program, day)) {
+        const previous = editing
+          ? (editing.exercises[exercise.id] ?? null)
+          : previousPerformance(workouts, day, exercise.id);
+        const plan = planFor(exercise, today);
+        const sets = editing
+          ? Math.max(1, previous?.reps.length || exercise.sets)
+          : plan.sets;
+        defaults[exercise.id] = initialForm(exercise, previous, plan.weight, sets, editing !== null);
+      }
+      return defaults;
+    },
+    [day, editing, workouts, program, planFor],
+  );
 
   const [forms, setForms] = useState<Record<string, ExerciseForm>>(() => {
-    const defaults = computeDefaults();
+    const defaults = computeDefaults(readiness);
     if (!restored) return defaults;
     return Object.fromEntries(
       Object.entries(defaults).map(([id, value]) => [id, restored.forms[id] ?? value]),
@@ -118,8 +166,9 @@ export default function WorkoutView({
       day,
       forms,
       notes,
+      readiness: readiness ?? "",
     });
-  }, [account, program.id, day, editingId, forms, notes]);
+  }, [account, program.id, day, editingId, forms, notes, readiness]);
 
   /** Drops the stored draft. `reset` also puts the visible inputs back to their
    *  defaults, which is what "Start fresh" means to someone looking at them. */
@@ -129,7 +178,9 @@ export default function WorkoutView({
       clearDraft(account, program.id, day, editingId);
       setDraftRestored(false);
       if (reset) {
-        setForms(computeDefaults());
+        const saved = editing?.readiness ?? null;
+        setReadiness(saved);
+        setForms(computeDefaults(saved));
         setNotes(editing?.notes ?? "");
       }
     },
@@ -142,6 +193,43 @@ export default function WorkoutView({
       ...current,
       [exerciseId]: { ...(current[exerciseId] ?? { weight: "", rir: "", reps: [] }), ...patch },
     }));
+  }
+
+  /**
+   * Readiness changes the plan, and a rough day drops any added sets. The
+   * weight and set count follow the new plan; reps already typed are kept.
+   */
+  function chooseReadiness(next: Readiness | null) {
+    markDirty();
+    setReadiness(next);
+    if (editing) return;
+    setForms((current) => {
+      const updated = { ...current };
+      for (const exercise of exercisesForDay(program, day)) {
+        const existing = current[exercise.id] ?? emptyForm(exercise);
+        const before = planFor(exercise, readiness);
+        const plan = planFor(exercise, next);
+        // Follow the plan only where the box still holds the old plan's load;
+        // a weight the lifter typed themselves stays.
+        const untouched = existing.weight === String(before.weight);
+        updated[exercise.id] = {
+          ...existing,
+          weight:
+            takesWeight(exercise) && plan.weight !== "" && untouched
+              ? String(plan.weight)
+              : existing.weight,
+          reps: resize(existing.reps, plan.sets),
+        };
+      }
+      return updated;
+    });
+  }
+
+  function changeSetCount(exercise: Exercise, delta: number) {
+    const existing = forms[exercise.id] ?? emptyForm(exercise);
+    const next = existing.reps.length + delta;
+    if (next < 1 || next > exercise.sets + MAX_EXTRA_SETS) return;
+    update(exercise.id, { reps: resize(existing.reps, next) });
   }
 
   function updateRep(exerciseId: string, index: number, value: string) {
@@ -167,7 +255,8 @@ export default function WorkoutView({
         weight: takesWeight(exercise) ? Number(form.weight || 0) : 0,
         unit: exercise.unit,
         rir: form.rir === "" ? null : Number(form.rir),
-        reps: Array.from({ length: exercise.sets }, (_, i) => Number(form.reps[i] || 0)),
+        form_ok: form.form === "held" ? true : form.form === "broke" ? false : null,
+        reps: form.reps.map((r) => Number(r || 0)),
       };
     });
 
@@ -183,6 +272,7 @@ export default function WorkoutView({
         exercises,
         programId: program.id,
         weekNumber: program.hasWeeks ? program.week : null,
+        readiness,
       });
       discardDraft();
       await refresh();
@@ -277,11 +367,44 @@ export default function WorkoutView({
           </div>
           {!editing ? <button onClick={() => startRest(90)}>Rest timer</button> : null}
         </div>
+
+        <div style={{ marginTop: 10 }}>
+          <div className="label" id="readiness-label">
+            How do you feel walking in?
+          </div>
+          <div className="seg" role="group" aria-labelledby="readiness-label">
+            {READINESS_LEVELS.map((level) => (
+              <button
+                key={level}
+                type="button"
+                aria-pressed={readiness === level}
+                className={readiness === level ? "active" : ""}
+                onClick={() => chooseReadiness(readiness === level ? null : level)}
+              >
+                {READINESS_LABEL[level]}
+              </button>
+            ))}
+          </div>
+          {readiness === "rough" && !editing ? (
+            <div className="small muted" style={{ marginTop: 6 }}>
+              Rough day: targets hold at last session&apos;s numbers, and this session will not
+              count against any lift.
+            </div>
+          ) : null}
+        </div>
       </div>
 
+      {state.v6Inputs === false ? (
+        <div className="notice">
+          Readiness and form will not be saved until the V6 database update
+          (<code>0006_v6_inputs.sql</code>) is applied. The workout itself saves as normal.
+        </div>
+      ) : null}
+
       {exercisesForDay(program, day).map((exercise, index) => {
-        const suggestion = suggest(exercise, day, workouts, starts);
+        const suggestion = planFor(exercise, readiness);
         const form = forms[exercise.id] ?? emptyForm(exercise);
+        const extra = form.reps.length - exercise.sets;
         return (
           <div className="card" key={exercise.id}>
             <div className="exercise-head">
@@ -292,13 +415,16 @@ export default function WorkoutView({
                 </h3>
                 <div className="badges">
                   <span className="badge">
-                    {exercise.sets} ×{" "}
+                    {form.reps.length} ×{" "}
                     {exercise.min ? `${exercise.min}–${exercise.max}` : "near failure"}{" "}
                     {exercise.type === "timed" ? "sec" : "reps"}
                     {exercise.perSide ? " per side" : ""}
                   </span>
                   {targetRirLabel(exercise) ? (
                     <span className="badge">{targetRirLabel(exercise)}</span>
+                  ) : null}
+                  {extra > 0 ? (
+                    <span className="badge">+{extra} set{extra === 1 ? "" : "s"}</span>
                   ) : null}
                   {exercise.dropset ? <span className="badge warn-badge">Dropset</span> : null}
                   {exercise.supersetGroup ? (
@@ -323,6 +449,12 @@ export default function WorkoutView({
                 <b>Next target:</b> {suggestion.target}
                 <br />
                 <span className="small">{suggestion.focus}</span>
+                {suggestion.note ? (
+                  <>
+                    <br />
+                    <span className="small muted">{suggestion.note}</span>
+                  </>
+                ) : null}
               </div>
             ) : null}
 
@@ -375,6 +507,51 @@ export default function WorkoutView({
                   />
                 </div>
               ))}
+            </div>
+
+            <div className="row" style={{ marginTop: 10, flexWrap: "wrap", gap: 8 }}>
+              <div className="seg" role="group" aria-label={`Sets for ${exercise.name}`}>
+                <button
+                  type="button"
+                  onClick={() => changeSetCount(exercise, -1)}
+                  disabled={form.reps.length <= 1}
+                  aria-label={`Remove a set from ${exercise.name}`}
+                >
+                  − Set
+                </button>
+                <button
+                  type="button"
+                  onClick={() => changeSetCount(exercise, 1)}
+                  disabled={form.reps.length >= exercise.sets + MAX_EXTRA_SETS}
+                  aria-label={`Add a set to ${exercise.name}`}
+                >
+                  + Set
+                </button>
+              </div>
+              {checksForm(exercise) ? (
+                <div className="seg" role="group" aria-label={`Form on ${exercise.name}`}>
+                  <button
+                    type="button"
+                    aria-pressed={form.form === "held"}
+                    className={form.form === "held" ? "active" : ""}
+                    onClick={() =>
+                      update(exercise.id, { form: form.form === "held" ? "" : "held" })
+                    }
+                  >
+                    Form held
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={form.form === "broke"}
+                    className={form.form === "broke" ? "active bad" : ""}
+                    onClick={() =>
+                      update(exercise.id, { form: form.form === "broke" ? "" : "broke" })
+                    }
+                  >
+                    Form broke
+                  </button>
+                </div>
+              ) : null}
             </div>
           </div>
         );
