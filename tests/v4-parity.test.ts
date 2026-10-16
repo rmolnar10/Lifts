@@ -141,7 +141,7 @@ const INTENTIONAL_PROGRAM_CHANGES: Record<string, Record<string, string>> = {
       "Weighted Pull-Up → bodyweight Pull-Up, 4→3 sets at 5–10: always done at bodyweight but logged as 165 lb",
     crowH: "renamed Cable Row → Seated Cable Row; RPE 9–10 target added",
     shoulder: "RPE 8–9 target added",
-    latH: "12–20 → 8–15, RPE 9–10 target and a dropset on the last set",
+    latH: "3→4 sets at 8–15, RPE 9–10 target and a dropset on the last set; side delts 6 → 8 sets/week",
     tri: "RPE 9–10, dropset, and supersetted (A1) with the curl, so rest drops to 0s",
     curl:
       "renamed Curl → Machine Curl, RPE 9–10, dropset, supersetted (A2) with the pushdown",
@@ -152,7 +152,7 @@ const INTENTIONAL_PROGRAM_CHANGES: Record<string, Record<string, string>> = {
     fly: "added: Cable Fly 3×10–15, the only chest work at a long muscle length",
     pull: "unit reps → lb with a 2.5 lb increment, so bodyweight pull-ups can progress to weighted",
     crowV: "renamed Seated Cable Row and 3→2 sets, funding the chest increase",
-    latV: "15–20 → 8–15, RPE 9–10 target and a dropset on the last set",
+    latV: "3→4 sets at 8–15, RPE 9–10 target and a dropset on the last set",
     hammer: "RPE 9–10, dropset, supersetted (A1) with the overhead extension",
     ohtri: "added: Overhead Triceps Extension 3×10–15, bringing triceps to 6 sets/week",
     pushup: "removed: optional and unprogressed, leaving direct triceps volume at 3 sets/week",
@@ -161,22 +161,28 @@ const INTENTIONAL_PROGRAM_CHANGES: Record<string, Record<string, string>> = {
 };
 
 /**
- * V4 days this program no longer has. Lower-body hypertrophy was deliberately
- * dropped: the stated priority is hip mobility and pelvic-floor control, which
- * the support days serve better, and heavy bracing can raise resting tone.
- * History logged under these days is preserved, not deleted.
+ * V4 days this program no longer has. The heavy squat-and-RDL leg day stays
+ * retired: the brace it demands can raise resting pelvic-floor tone. The
+ * low-bracing Lower day replaces it. History logged under these days is
+ * preserved, not deleted.
  */
 const RETIRED_DAYS: Record<string, string> = {
   "Legs + Abs":
-    "dropped: lower-body hypertrophy deprioritised in favour of hip mobility and pelvic-floor work",
+    "replaced by Lower: split squats, light DB RDLs and machines, all short of failure",
 };
 
-/** Days that did not exist in V4. None of them is load-progressed. */
+/**
+ * Days that did not exist in V4. Only Lower is load-progressed.
+ *
+ * Functional Lower, Hip Mobility and Pelvic Floor (post-V4 weekly days) were
+ * folded into the two daily routines so that work happens every morning.
+ */
 const ADDED_DAYS: Record<string, string> = {
-  "Functional Lower": "hip stability and unilateral control, unloaded",
-  "Hip Mobility": "mobility and movement quality, unloaded",
-  "Pelvic Floor": "pelvic-floor control and relaxation, unloaded",
+  Lower: "lower-body hypertrophy that needs little bracing, RPE 7–9, no dropsets",
+  "Daily Hips A (Mobility)": "hip mobility and pelvic-floor relaxation, unloaded, alternating daily",
+  "Daily Hips B (Strength)": "hip strength and control, unloaded, alternating daily",
   Cardio: "zone 2, logged for consistency rather than progression",
+  Intervals: "one weekly interval session, logged but never progressed",
 };
 
 /** Ids whose definition is byte-identical in both programs. */
@@ -236,7 +242,7 @@ describe("program drift", () => {
   it("tracks cardio without ever progressing it", () => {
     // V4 excluded cardio entirely. It is now tracked at the user's request, but
     // only as a logged session: it must never acquire a load or an increment.
-    const cardio = PROGRAM["Cardio"] ?? [];
+    const cardio = [...(PROGRAM["Cardio"] ?? []), ...(PROGRAM["Intervals"] ?? [])];
     expect(cardio.length).toBeGreaterThan(0);
     for (const e of cardio) {
       expect(UNTRACKED_TYPES).toContain(e.type);
