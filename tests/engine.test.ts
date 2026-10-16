@@ -74,8 +74,8 @@ describe("falls back to the V5 rule where V6 has nothing to add", () => {
   });
 
   it("leaves untracked movements alone", () => {
-    const hollow = find("Functional Lower", "hollow");
-    const p = planNext(hollow, "Functional Lower", [], {});
+    const hold = find("Daily Hips A (Mobility)", "hkhip");
+    const p = planNext(hold, "Daily Hips A (Mobility)", [], {});
     expect(p.status).toBe("untracked");
   });
 });
