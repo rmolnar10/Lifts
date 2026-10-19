@@ -18,6 +18,12 @@
 - Backups (version 6) carry readiness, form and bodyweight.
 
 ## Post-V5 fixes
+- Program changes now reach existing accounts (2026-10-19). The built-in program
+  was seeded once and never updated, so the Lower day, the daily hip routines and
+  the Intervals day only ever reached new accounts. The app now re-imports the
+  built-in program on load whenever the account's copy differs from the code,
+  keeping the program id, its name and all history. The seed also carries RPE
+  targets, dropsets, supersets and per-side flags, which it used to drop.
 - Leg day back, hip work daily, cardio structured (2026-10-15):
   - New Lower day built to need little bracing: DB Bulgarian Split Squat and
     DB Romanian Deadlift 3x8-12 at RPE 7-8, Leg Extension and Seated Leg Curl

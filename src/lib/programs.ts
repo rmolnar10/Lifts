@@ -9,7 +9,12 @@
  */
 
 import { getSupabaseBrowserClient } from "./supabase/client";
-import { BUILTIN_PROGRAM_SLUG, builtinProgramSpec, type ProgramSpec } from "./programSpec";
+import {
+  BUILTIN_PROGRAM_SLUG,
+  builtinProgramSpec,
+  matchesBuiltin,
+  type ProgramSpec,
+} from "./programSpec";
 import type { Exercise, ProgressionType, Unit } from "./program";
 
 export interface ProgramSummary {
@@ -180,6 +185,22 @@ export async function adoptOrphanHistory(programId: string): Promise<number> {
 }
 
 /**
+ * Brings an account's copy of the built-in program up to date with the code.
+ *
+ * The built-in program is seeded once, so without this an edit to PROGRAM only
+ * ever reached new accounts. Re-importing keeps the program id, and history is
+ * keyed by program, day and exercise id rather than by row, so nothing logged
+ * is lost; days the code no longer has show up as retired. The account's own
+ * name for the program is kept.
+ */
+async function syncBuiltin(builtin: ProgramSummary): Promise<void> {
+  const loaded = await loadProgram(builtin.id);
+  const block = loaded.blocks[0];
+  if (loaded.blocks.length === 1 && block && matchesBuiltin(block.dayOrder, block.days)) return;
+  await importProgram({ ...builtinProgramSpec(), name: builtin.name, notes: builtin.notes ?? "" });
+}
+
+/**
  * Makes sure the account has the built-in program and an active selection,
  * adopting any pre-programs history the first time. Returns the active program.
  */
@@ -199,6 +220,9 @@ export async function ensurePrograms(): Promise<{
     await adoptOrphanHistory(id);
     programs = await listPrograms();
     builtin = programs.find((p) => p.id === id) ?? programs[0];
+  } else {
+    // A failed sync leaves the previous copy in place, which still works.
+    await syncBuiltin(builtin).catch((e) => console.warn("Could not update the built-in program", e));
   }
 
   let activeId = await getActiveProgramId();
