@@ -62,7 +62,23 @@ function toSpec(exercise: Exercise, position: number): ProgramExerciseSpec {
     increment: exercise.inc,
     reset_reps: exercise.reset,
     rest_seconds: exercise.rest,
+    target_rpe_low: exercise.targetRpe?.[0] ?? null,
+    target_rpe_high: exercise.targetRpe?.[1] ?? null,
+    dropset: exercise.dropset ?? false,
+    superset_group: exercise.supersetGroup ?? null,
+    per_side: exercise.perSide ?? false,
+    warmup_sets: exercise.warmupSets ?? null,
   };
+}
+
+/**
+ * Do these days match the built-in program exactly? Both sides go through the
+ * same wire shape, so a missing field and an explicit null compare equal.
+ */
+export function matchesBuiltin(dayOrder: string[], days: Record<string, Exercise[]>): boolean {
+  const wire = (order: string[], byDay: Record<string, Exercise[]>) =>
+    JSON.stringify(order.map((day) => [day, (byDay[day] ?? []).map(toSpec)]));
+  return wire(dayOrder, days) === wire(Object.keys(PROGRAM), PROGRAM);
 }
 
 /**
