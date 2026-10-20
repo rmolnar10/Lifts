@@ -198,6 +198,7 @@ export default function AppShell({ userEmail }: { userEmail: string }) {
           </div>
           <div className="actions" style={{ marginTop: 0 }}>
             <span className="sync">{userEmail}</span>
+            <a href="/meals">Meal switcher</a>
             <form action="/auth/signout" method="post">
               <button type="submit">Sign out</button>
             </form>
