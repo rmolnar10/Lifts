@@ -76,6 +76,8 @@ export const PROGRAM: Program = {
   ],
   // Lower-body hypertrophy, chosen to need as little bracing as possible: one
   // unilateral squat, one light hinge, and machines you can breathe through.
+  // Hip abduction and adduction live in Hip & Core Strength, done with bands
+  // at home, because the gym has neither the machines nor ankle straps.
   // Efforts stay at RPE 7-9 with no dropsets, exhaling on every effort, so the
   // work never fights the pelvic-floor goal. Roughly 6 sets a week per leg muscle.
   "Lower": [
@@ -83,8 +85,6 @@ export const PROGRAM: Program = {
     { id: "dbrdl", name: "DB Romanian Deadlift", sets: 3, min: 8, max: 12, type: "primary", unit: "lb", inc: 5, reset: 8, rest: 120, targetRpe: [7, 8] },
     { id: "legext", name: "Leg Extension", sets: 3, min: 10, max: 15, type: "isolation", unit: "lb", inc: 5, reset: 10, rest: 90, targetRpe: [8, 9] },
     { id: "seatcurl", name: "Seated Leg Curl", sets: 3, min: 10, max: 15, type: "isolation", unit: "lb", inc: 5, reset: 10, rest: 90, targetRpe: [8, 9] },
-    { id: "cableabd", name: "Cable Hip Abduction (ankle strap)", sets: 2, min: 12, max: 20, type: "isolation", unit: "lb", inc: 5, reset: 12, rest: 45, targetRpe: [8, 9], perSide: true },
-    { id: "cableadd", name: "Cable Hip Adduction (ankle strap)", sets: 2, min: 12, max: 20, type: "isolation", unit: "lb", inc: 5, reset: 12, rest: 45, targetRpe: [7, 8], perSide: true },
   ],
   // Everything below is logged but never load-progressed: the point is control,
   // range of motion and consistency, not overload.
@@ -106,6 +106,7 @@ export const PROGRAM: Program = {
     { id: "splankhip", name: "Side Plank + Banded Hip Raise", sets: 2, min: 8, max: 15, type: "control", unit: "reps", inc: 0, reset: 8, rest: 45, perSide: true },
     { id: "pigeonraise", name: "Pigeon Raise", sets: 2, min: 8, max: 15, type: "control", unit: "reps", inc: 0, reset: 8, rest: 45, perSide: true },
     { id: "monster", name: "Monster Steps", sets: 2, min: 10, max: 15, type: "control", unit: "reps", inc: 0, reset: 10, rest: 45, perSide: true },
+    { id: "copenhagen", name: "Copenhagen Plank (top knee on a couch or bench)", sets: 2, min: 15, max: 30, type: "timed", unit: "sec", inc: 0, reset: 15, rest: 45, perSide: true },
     { id: "deadbug", name: "Dead Bug (exhale on each rep)", sets: 2, min: 6, max: 10, type: "control", unit: "reps", inc: 0, reset: 6, rest: 45, perSide: true },
   ],
   // About 150 min of zone 2 a week over 3-4 sessions, plus one interval session.

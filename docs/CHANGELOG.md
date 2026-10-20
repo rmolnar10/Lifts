@@ -28,8 +28,10 @@
     every set reaches the top of its range, instead of never progressing it.
   - Side Lunge, Bridge + Knee Lift, Supine 90°, Foam-Roller Step-Over and
     Step-Through Lunge dropped; the Lower day covers their work.
-  - Hip abduction and adduction machines replaced by ankle-strap cable versions,
-    per side, since the gym has no machines.
+  - Hip abduction and adduction machines removed from the Lower day: the gym has
+    neither the machines nor ankle straps. Abduction is covered at home by Monster
+    Steps and the side plank hip raise; adduction by a new Copenhagen Plank
+    (top knee on a couch or bench), 2x15-30 s per side, in Hip & Core Strength.
 - Program changes now reach existing accounts (2026-10-19). The built-in program
   was seeded once and never updated, so the Lower day, the daily hip routines and
   the Intervals day only ever reached new accounts. The app now re-imports the

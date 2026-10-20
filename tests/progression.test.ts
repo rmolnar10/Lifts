@@ -259,7 +259,7 @@ describe("program integrity", () => {
     ]);
     expect(PROGRAM[HEAVY]).toHaveLength(7);
     expect(PROGRAM[VOLUME]).toHaveLength(8);
-    expect(PROGRAM[LOWER]).toHaveLength(6);
+    expect(PROGRAM[LOWER]).toHaveLength(4);
   });
 
   it("keeps the lower day off failure and free of dropsets", () => {
