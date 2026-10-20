@@ -302,6 +302,7 @@ async function handleRest(req, res, url) {
       "adopt_orphan_history",
       "log_bodyweight",
       "set_workout_readiness",
+      "set_meal_checks",
     ];
     if (!allowed.includes(fn)) {
       return send(res, 501, { message: `QA stub: unknown rpc ${fn}` });
@@ -352,6 +353,13 @@ async function handleRest(req, res, url) {
     if (table === "body_metrics" && req.method === "GET") {
       const result = await asUser(userId, (c) =>
         c.query("select measured_on::text, weight from public.body_metrics order by measured_on"),
+      );
+      return send(res, 200, result.rows);
+    }
+
+    if (table === "meal_checks" && req.method === "GET") {
+      const result = await asUser(userId, (c) =>
+        c.query("select day::text, checked, plan from public.meal_checks order by day desc limit 60"),
       );
       return send(res, 200, result.rows);
     }
