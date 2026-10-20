@@ -361,3 +361,76 @@ td {
 .seg button {
   min-height: 40px;
 }
+
+/* Daily meal checklist. */
+.meter {
+  margin-bottom: 8px;
+}
+
+.meter-bar {
+  height: 8px;
+  border-radius: 99px;
+  background: #e7ecf2;
+  overflow: hidden;
+  margin-top: 3px;
+}
+
+.meter-bar i {
+  display: block;
+  height: 100%;
+  background: #2f8f4e;
+  transition: width 0.2s;
+}
+
+.meal-list {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+}
+
+.meal {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 4px;
+  border-top: 1px solid #eef1f5;
+  margin: 0;
+  font-size: 15px;
+  color: inherit;
+  cursor: pointer;
+}
+
+.meal input {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  margin: 0;
+}
+
+.meal-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.meal-macros {
+  text-align: right;
+  white-space: nowrap;
+  color: #687384;
+}
+
+.meal.done b {
+  text-decoration: line-through;
+  color: #687384;
+}
+
+.meal-totals {
+  position: sticky;
+  bottom: 0;
+  background: #fff;
+  border-top: 1px solid #dfe5ec;
+  padding: 10px 0 8px;
+  margin-bottom: 8px;
+}

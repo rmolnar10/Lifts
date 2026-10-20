@@ -458,8 +458,8 @@ function fixedRows(st){
   const rows=[];
   for(const grp of FIXED) for(const it of grp.items){
     if(st.off.includes(it.id)) continue;
-    if(it.id==="rc"){ const r=rcItem(); if(r) rows.push({meal:grp.meal,name:it.name,amt:r.amt,...r}); continue; }
-    rows.push({meal:grp.meal,name:it.name,amt:it.amt,k:it.k,p:it.p,c:it.c,f:it.f,fb:it.fb});
+    if(it.id==="rc"){ const r=rcItem(); if(r) rows.push({meal:grp.meal,id:it.id,name:it.name,amt:r.amt,...r}); continue; }
+    rows.push({meal:grp.meal,id:it.id,name:it.name,amt:it.amt,k:it.k,p:it.p,c:it.c,f:it.f,fb:it.fb});
   }
   return rows;
 }
@@ -573,8 +573,38 @@ function update(){
   h += `<tr class="tot"><td>Day</td><td></td><td class="n">${fmt(tot.k)}</td><td class="n">${fmt(tot.p)}</td><td class="n">${fmt(tot.c)}</td><td class="n">${fmt(tot.f)}</td></tr></tbody>`;
   $("dayTable").innerHTML = h;
   window._day = {all, tot, T};
+  saveChecklistPlan(all, T);
 
   renderCards(); renderOffsets();
+}
+
+/* The daily meal checklist in Lifts reads this, so ticking a meal off counts
+   whatever chicken, turkey and rice amounts are picked here. */
+function saveChecklistPlan(all, T){
+  const groups = [
+    {id:"breakfast", label:"Oats breakfast", rows:all.filter(x=>x.meal==="Breakfast")},
+    {id:"musashi", label:"Musashi bar", rows:all.filter(x=>x.id==="musashi")},
+    {id:"uncrustable", label:"Uncrustable", rows:all.filter(x=>x.id==="uncr")},
+    {id:"ricecakes", label:"Rice cakes + PB", rows:all.filter(x=>x.id==="rc"||x.id==="pb")},
+    {id:"turkey", label:"Turkey meal", rows:all.filter(x=>x.meal==="Turkey meal")},
+    {id:"dinner", label:"Chicken dinner", rows:all.filter(x=>x.meal==="Dinner"&&x.name!=="Olive oil")},
+    {id:"oil", label:"Olive oil", rows:all.filter(x=>x.name==="Olive oil")}
+  ];
+  const items = groups.filter(g=>g.rows.length).map(g=>({
+    id:g.id, label:g.label,
+    detail:g.rows.map(x=>x.amt==="1 portion"||x.amt==="1 bar"?x.name:`${x.name}, ${x.amt}`).join(" · "),
+    kcal:Math.round(g.rows.reduce((a,x)=>a+x.k,0)),
+    protein:Math.round(g.rows.reduce((a,x)=>a+x.p,0))
+  }));
+  const target = {label:T.label, kcal:Math.round(T.k), protein:Math.round(T.p)};
+  try{
+    // Only a real change gets a new timestamp, so just opening this page doesn't
+    // outrank a newer pick saved from another device.
+    const prev = JSON.parse(localStorage.getItem("mealChecklistPlan")||"null");
+    const same = prev && JSON.stringify({t:prev.target,i:prev.items})===JSON.stringify({t:target,i:items});
+    if(same) return;
+    localStorage.setItem("mealChecklistPlan", JSON.stringify({v:1, at:new Date().toISOString(), target, items}));
+  }catch(e){}
 }
 
 function copyDay(){

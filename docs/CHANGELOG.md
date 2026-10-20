@@ -1,5 +1,16 @@
 # Changelog
 
+## Daily meal checklist (2026-10-20)
+- New Meals tab: tick off the day's seven fixed meals (oats breakfast, Musashi
+  bar, Uncrustable, rice cakes + PB, turkey meal, chicken dinner, olive oil)
+  and see kcal and protein add up against the target (2,300 kcal / 200 g).
+- The chicken, turkey, rice and oil amounts come from the meal switcher at
+  /meals, which now writes its current day to localStorage. Ticks save per day
+  with the plan they were made against, so past days keep their own totals and
+  another device picks up the newest plan.
+- Migration 0007: `meal_checks` table and `set_meal_checks` RPC. Without it
+  the tab says so and nothing else changes.
+
 ## V6 — progression engine (2026-10-15)
 - New engine (`src/lib/engine.ts`) tuned to a late novice in a deficit
   (`src/lib/athlete.ts`). The V4 rule stays underneath, still pinned by the

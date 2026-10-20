@@ -18,6 +18,7 @@ import type {
 } from "./types";
 import type { Unit } from "./program";
 import { LEGACY_PROGRAM_ID } from "./activeProgram";
+import { parsePlan, type MealDay, type MealPlan } from "./meals";
 
 interface WorkoutSetRow {
   set_number: number;
@@ -189,6 +190,38 @@ export async function logBodyweight(date: string, weight: number | null): Promis
   const { error } = await supabase.rpc("log_bodyweight", {
     p_measured_on: date,
     p_weight: weight,
+  });
+  if (error) throw error;
+}
+
+/**
+ * The last 60 days of meal checks, newest first. Null until migration 0007 is
+ * applied.
+ */
+export async function loadMealDays(): Promise<MealDay[] | null> {
+  const supabase = getSupabaseBrowserClient();
+  const { data, error } = await supabase
+    .from("meal_checks")
+    .select("day, checked, plan")
+    .order("day", { ascending: false })
+    .limit(60);
+  if (error) {
+    if (isMissingV6Schema(error)) return null;
+    throw error;
+  }
+  return ((data ?? []) as { day: string; checked: unknown; plan: unknown }[]).map((row) => ({
+    day: row.day,
+    checked: Array.isArray(row.checked) ? row.checked.filter((c): c is string => typeof c === "string") : [],
+    plan: parsePlan(row.plan),
+  }));
+}
+
+export async function saveMealChecks(day: string, checked: string[], plan: MealPlan): Promise<void> {
+  const supabase = getSupabaseBrowserClient();
+  const { error } = await supabase.rpc("set_meal_checks", {
+    p_day: day,
+    p_checked: checked,
+    p_plan: plan,
   });
   if (error) throw error;
 }
