@@ -175,12 +175,12 @@ const RETIRED_DAYS: Record<string, string> = {
  * Days that did not exist in V4. Only Lower is load-progressed.
  *
  * Functional Lower, Hip Mobility and Pelvic Floor (post-V4 weekly days) were
- * folded into the two daily routines so that work happens every morning.
+ * folded into the two morning routines.
  */
 const ADDED_DAYS: Record<string, string> = {
   Lower: "lower-body hypertrophy that needs little bracing, RPE 7–9, no dropsets",
-  "Daily Hips A (Mobility)": "hip mobility and pelvic-floor relaxation, unloaded, alternating daily",
-  "Daily Hips B (Strength)": "hip strength and control, unloaded, alternating daily",
+  "Daily Hips (Mobility)": "hip mobility and pelvic-floor relaxation every morning, unloaded",
+  "Hip & Core Strength": "hip and core strength three mornings a week, unloaded but pushed to harder variations",
   Cardio: "zone 2, logged for consistency rather than progression",
   Intervals: "one weekly interval session, logged but never progressed",
 };

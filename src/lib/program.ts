@@ -6,9 +6,10 @@
  * still proves the progression ENGINE behaves exactly as V4's did.
  *
  * Three gym days carry the hypertrophy work: two upper and one lower. The lower
- * day avoids heavy bracing, which can work against a hypertonic pelvic floor,
- * and hip and pelvic-floor work runs daily as two alternating morning routines.
- * The daily routines and the cardio days are logged but never load-progressed.
+ * day avoids heavy bracing, which can work against a hypertonic pelvic floor.
+ * Hip mobility and pelvic-floor relaxation run every morning, with a separate
+ * hip and core strength routine three mornings a week. Those routines and the
+ * cardio days are logged but never load-progressed.
  *
  * Rear delt fly is deliberately absent.
  */
@@ -18,6 +19,7 @@ export type ProgressionType =
   | "isolation"
   | "bodyweight"
   | "quality"
+  | "control"
   | "timed"
   | "practice"
   | "optional";
@@ -81,36 +83,30 @@ export const PROGRAM: Program = {
     { id: "dbrdl", name: "DB Romanian Deadlift", sets: 3, min: 8, max: 12, type: "primary", unit: "lb", inc: 5, reset: 8, rest: 120, targetRpe: [7, 8] },
     { id: "legext", name: "Leg Extension", sets: 3, min: 10, max: 15, type: "isolation", unit: "lb", inc: 5, reset: 10, rest: 90, targetRpe: [8, 9] },
     { id: "seatcurl", name: "Seated Leg Curl", sets: 3, min: 10, max: 15, type: "isolation", unit: "lb", inc: 5, reset: 10, rest: 90, targetRpe: [8, 9] },
-    { id: "hipabd", name: "Hip Abduction Machine", sets: 2, min: 12, max: 20, type: "isolation", unit: "lb", inc: 5, reset: 12, rest: 60, targetRpe: [8, 9] },
-    { id: "hipadd", name: "Hip Adduction Machine", sets: 2, min: 12, max: 20, type: "isolation", unit: "lb", inc: 5, reset: 12, rest: 60, targetRpe: [7, 8] },
+    { id: "cableabd", name: "Cable Hip Abduction (ankle strap)", sets: 2, min: 12, max: 20, type: "isolation", unit: "lb", inc: 5, reset: 12, rest: 45, targetRpe: [8, 9], perSide: true },
+    { id: "cableadd", name: "Cable Hip Adduction (ankle strap)", sets: 2, min: 12, max: 20, type: "isolation", unit: "lb", inc: 5, reset: 12, rest: 45, targetRpe: [7, 8], perSide: true },
   ],
   // Everything below is logged but never load-progressed: the point is control,
   // range of motion and consistency, not overload.
   //
-  // The two daily routines alternate as a morning session, so hip and
-  // pelvic-floor work happens every day instead of once a week each. A is
-  // mobility and down-training; B is hip strength and control. Both end on
-  // pelvic-floor relaxation.
-  "Daily Hips A (Mobility)": [
-    { id: "scissor9090", name: "90/90 Scissor", sets: 2, min: 6, max: 8, type: "quality", unit: "reps", inc: 0, reset: 6, rest: 30, perSide: true },
-    { id: "rollerstep", name: "Foam-Roller Step-Over", sets: 2, min: 8, max: 10, type: "quality", unit: "reps", inc: 0, reset: 8, rest: 30, perSide: true },
-    { id: "pigeonpush", name: "Unweighted Pigeon Push-Up", sets: 2, min: 6, max: 10, type: "quality", unit: "reps", inc: 0, reset: 6, rest: 30, perSide: true },
-    { id: "stepthru", name: "Step-Through Lunge", sets: 2, min: 6, max: 8, type: "quality", unit: "reps", inc: 0, reset: 6, rest: 30, perSide: true },
-    { id: "cossack", name: "Cossack Squat Shift", sets: 2, min: 6, max: 8, type: "quality", unit: "reps", inc: 0, reset: 6, rest: 30, perSide: true },
-    { id: "hkhip", name: "Half-Kneeling Hip Mobility", sets: 2, min: 30, max: 45, type: "timed", unit: "sec", inc: 0, reset: 30, rest: 30, perSide: true },
-    { id: "beardog", name: "Bear Hold → Downward Dog", sets: 2, min: 5, max: 8, type: "quality", unit: "reps", inc: 0, reset: 5, rest: 45 },
-    { id: "pfrelax", name: "360° Breathing / Pelvic-Floor Relaxation", sets: 1, min: 120, max: 180, type: "practice", unit: "sec", inc: 0, reset: 120, rest: 0 },
+  // Mobility responds to frequency, so it is a short routine done every
+  // morning, ending on pelvic-floor relaxation. Strength and control need
+  // effort and recovery, so they get their own routine three mornings a week,
+  // and those moves are pushed to a harder variation once every set tops out.
+  "Daily Hips (Mobility)": [
+    { id: "scissor9090", name: "90/90 Scissor", sets: 2, min: 6, max: 8, type: "quality", unit: "reps", inc: 0, reset: 6, rest: 20, perSide: true },
+    { id: "cossack", name: "Cossack Squat Shift", sets: 1, min: 6, max: 8, type: "quality", unit: "reps", inc: 0, reset: 6, rest: 20, perSide: true },
+    { id: "hkhip", name: "Half-Kneeling Hip Mobility", sets: 2, min: 30, max: 45, type: "timed", unit: "sec", inc: 0, reset: 30, rest: 20, perSide: true },
+    { id: "pigeonpush", name: "Unweighted Pigeon Push-Up", sets: 1, min: 6, max: 10, type: "quality", unit: "reps", inc: 0, reset: 6, rest: 20, perSide: true },
+    { id: "beardog", name: "Bear Hold → Downward Dog", sets: 1, min: 5, max: 8, type: "quality", unit: "reps", inc: 0, reset: 5, rest: 20 },
+    { id: "pfrelax", name: "360° Breathing / Reverse Kegel", sets: 1, min: 120, max: 180, type: "practice", unit: "sec", inc: 0, reset: 120, rest: 0 },
   ],
-  "Daily Hips B (Strength)": [
-    { id: "sidelunge", name: "Side Lunge", sets: 2, min: 8, max: 10, type: "quality", unit: "reps", inc: 0, reset: 8, rest: 45, perSide: true },
-    { id: "slbridge", name: "Single-Leg Glute Bridge", sets: 2, min: 8, max: 12, type: "quality", unit: "reps", inc: 0, reset: 8, rest: 45, perSide: true },
-    { id: "bridgeknee", name: "Bridge + Alternating Knee Lift", sets: 2, min: 8, max: 10, type: "quality", unit: "reps", inc: 0, reset: 8, rest: 45, perSide: true },
-    { id: "splankhip", name: "Side Plank + Banded Hip Raise", sets: 2, min: 8, max: 15, type: "quality", unit: "reps", inc: 0, reset: 8, rest: 45, perSide: true },
-    { id: "pigeonraise", name: "Pigeon Raise", sets: 2, min: 8, max: 15, type: "quality", unit: "reps", inc: 0, reset: 8, rest: 45, perSide: true },
-    { id: "monster", name: "Monster Steps", sets: 2, min: 10, max: 15, type: "quality", unit: "reps", inc: 0, reset: 10, rest: 45, perSide: true },
-    { id: "supine90", name: "Supine 90° Leg/Hip Movement", sets: 2, min: 8, max: 10, type: "quality", unit: "reps", inc: 0, reset: 8, rest: 45, perSide: true },
-    { id: "deadbug", name: "Dead Bug (exhale on each rep)", sets: 2, min: 6, max: 10, type: "quality", unit: "reps", inc: 0, reset: 6, rest: 45, perSide: true },
-    { id: "breath360", name: "360° Breathing / Reverse Kegel", sets: 1, min: 120, max: 180, type: "practice", unit: "sec", inc: 0, reset: 120, rest: 0 },
+  "Hip & Core Strength": [
+    { id: "slbridge", name: "Single-Leg Glute Bridge", sets: 2, min: 8, max: 12, type: "control", unit: "reps", inc: 0, reset: 8, rest: 45, perSide: true },
+    { id: "splankhip", name: "Side Plank + Banded Hip Raise", sets: 2, min: 8, max: 15, type: "control", unit: "reps", inc: 0, reset: 8, rest: 45, perSide: true },
+    { id: "pigeonraise", name: "Pigeon Raise", sets: 2, min: 8, max: 15, type: "control", unit: "reps", inc: 0, reset: 8, rest: 45, perSide: true },
+    { id: "monster", name: "Monster Steps", sets: 2, min: 10, max: 15, type: "control", unit: "reps", inc: 0, reset: 10, rest: 45, perSide: true },
+    { id: "deadbug", name: "Dead Bug (exhale on each rep)", sets: 2, min: 6, max: 10, type: "control", unit: "reps", inc: 0, reset: 6, rest: 45, perSide: true },
   ],
   // About 150 min of zone 2 a week over 3-4 sessions, plus one interval session.
   // Keep the intervals away from the morning before an upper day.
@@ -125,10 +121,10 @@ export const PROGRAM: Program = {
 export const DAYS = Object.keys(PROGRAM);
 
 /** Exercise types that never take an external load input. */
-export const UNWEIGHTED_TYPES: ProgressionType[] = ["optional", "timed", "practice", "quality"];
+export const UNWEIGHTED_TYPES: ProgressionType[] = ["optional", "timed", "practice", "quality", "control"];
 
 /** Exercise types excluded from starting-weight settings and progress charts. */
-export const UNTRACKED_TYPES: ProgressionType[] = ["optional", "timed", "practice", "quality"];
+export const UNTRACKED_TYPES: ProgressionType[] = ["optional", "timed", "practice", "quality", "control"];
 
 /** Every exercise in the program, paired with the day it belongs to. */
 export function allExercises(): { day: string; e: Exercise }[] {

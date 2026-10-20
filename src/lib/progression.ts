@@ -122,6 +122,20 @@ export function suggest(
     };
   }
 
+  if (exercise.type === "control") {
+    // Unloaded strength work still has to get harder to keep working, so once
+    // every set tops out the cue is a harder variation rather than more reps.
+    return {
+      target: top
+        ? `Make it harder, then build back from ${exercise.reset}`
+        : `Build toward ${exercise.max} clean reps`,
+      focus: top
+        ? "Use a stronger band, a 3-second lowering, or a 2-second pause at the top."
+        : `Prioritize Set ${low + 1}; slow and controlled.`,
+      weight: p.weight,
+    };
+  }
+
   if (exercise.type === "quality") {
     return {
       target: top ? "15 / 15 / 15 controlled reps" : `Build toward ${exercise.max} clean reps`,
