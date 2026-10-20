@@ -1,0 +1,647 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Meal Prep Switcher: static page, also published as a Claude artifact. Edit both together. -->
+<title>Meal Prep Switcher</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+[hidden]{display:none!important}
+.back{font-size:.85rem;text-decoration:none}
+/* Layout: freezer-label tool. Controls column + live "label" result on wide screens, stacked on phones; reference sections below. */
+:root{
+  --bg:#f3f6f7; --panel:#ffffff; --ink:#15262e; --muted:#5a6d75; --line:#d4dee2;
+  --accent:#c2410c; --accent-soft:#fbe7dc; --cool:#0f5e6e; --cool-soft:#dcedf0;
+  --good:#2f7d4a; --warn:#b26b00; --bad:#b42318;
+  --f-display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --f-body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e171b; --panel:#152228; --ink:#e3ecef; --muted:#93a7ae; --line:#2a3b42;
+  --accent:#fb8a4f; --accent-soft:#3a2216; --cool:#6cc3d3; --cool-soft:#14323a;
+  --good:#5cc77f; --warn:#f0b04a; --bad:#f2786d; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e171b; --panel:#152228; --ink:#e3ecef; --muted:#93a7ae; --line:#2a3b42;
+  --accent:#fb8a4f; --accent-soft:#3a2216; --cool:#6cc3d3; --cool-soft:#14323a;
+  --good:#5cc77f; --warn:#f0b04a; --bad:#f2786d; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55}
+.wrap{max-width:1180px;margin:0 auto;padding-block:28px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--f-display);letter-spacing:.01em;text-wrap:balance;margin:0}
+h1{font-size:clamp(2.2rem,5vw,3.2rem);font-weight:700;line-height:1}
+h2{font-size:1.9rem;font-weight:700;margin-bottom:6px}
+h3{font-size:1.35rem;font-weight:600}
+p{margin:0}
+a{color:var(--cool)}
+.eyebrow{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.lede{max-width:68ch;color:var(--muted);margin-top:10px}
+header{display:grid;gap:4px;margin-bottom:24px}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.grid{display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px}
+.controls{display:grid;gap:18px}
+fieldset{border:0;padding:0;margin:0;display:grid;gap:10px;min-width:0}
+legend{font-family:var(--f-display);font-weight:600;font-size:1.25rem;margin-bottom:6px;padding:0}
+label{display:grid;gap:4px;font-size:.82rem;color:var(--muted);font-weight:500}
+select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%}
+select:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--cool);outline-offset:2px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{font:inherit;font-size:.85rem;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:6px 12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.hint{font-size:.8rem;color:var(--muted)}
+.checks{display:grid;gap:6px}
+.checks label{display:flex;align-items:center;gap:8px;color:var(--ink);font-size:.88rem;font-weight:400}
+
+/* the label */
+.tag{border:2px dashed var(--line);border-radius:12px;padding:20px;background:var(--panel);display:grid;gap:18px}
+.carbline{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.carb{border-radius:8px;padding:14px 16px;background:var(--accent-soft)}
+.carb .big{font-family:var(--f-display);font-weight:700;font-size:2.6rem;line-height:1;color:var(--accent)}
+.carb .what{font-weight:600}
+.carb .sub{font-size:.85rem;color:var(--muted)}
+.alert{padding:10px 12px;border-radius:8px;font-size:.88rem;border:1px solid var(--warn);color:var(--ink)}
+.alert.bad{border-color:var(--bad)}
+.macros{display:grid;gap:10px}
+.mrow{display:grid;grid-template-columns:72px 1fr 120px;gap:10px;align-items:center;font-size:.88rem}
+.bar{height:10px;border-radius:5px;background:var(--cool-soft);position:relative;overflow:hidden}
+.bar i{position:absolute;inset:0 auto 0 0;background:var(--cool);border-radius:5px}
+.bar.over i{background:var(--warn)}
+.mrow .v{text-align:right}
+.kcal{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px}
+.kcal .k{font-family:var(--f-display);font-weight:700;font-size:2rem}
+.pill{font-family:var(--f-mono);font-size:.72rem;padding:3px 8px;border-radius:999px;background:var(--cool-soft);color:var(--cool)}
+.pill.ok{background:transparent;border:1px solid var(--good);color:var(--good)}
+.pill.no{background:transparent;border:1px solid var(--warn);color:var(--warn)}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.86rem}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.06em}
+td.n,th.n{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.meal td{background:var(--bg);font-family:var(--f-display);font-weight:600;font-size:1rem}
+tr.flex td{color:var(--accent);font-weight:600}
+tr.tot td{font-weight:700;border-top:2px solid var(--ink)}
+.copy{font:inherit;font-size:.82rem;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:6px;padding:6px 10px;cursor:pointer;justify-self:start}
+
+nav.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:40px 0 16px;border-bottom:1px solid var(--line);padding-bottom:10px}
+nav.tabs a{text-decoration:none;color:var(--ink);font-family:var(--f-display);font-weight:600;font-size:1.1rem;padding:4px 10px;border-radius:6px}
+nav.tabs a:hover{background:var(--cool-soft)}
+section{margin-top:36px;display:grid;gap:14px}
+.prose{max-width:72ch;display:grid;gap:10px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:14px}
+.card{border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:16px;display:grid;gap:10px;align-content:start}
+.card.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.card .top{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+.card .mac{font-family:var(--f-mono);font-size:.8rem;color:var(--muted)}
+.card .delta{font-family:var(--f-mono);font-size:.8rem;color:var(--accent)}
+.card p,.card li{font-size:.88rem}
+.card ul{margin:0;padding-left:18px}
+.frz{font-size:.84rem;background:var(--cool-soft);border-radius:6px;padding:8px 10px}
+.frz b{color:var(--cool)}
+.use{font:inherit;font-size:.82rem;font-weight:600;border:1px solid var(--accent);color:var(--accent);background:transparent;border-radius:6px;padding:5px 10px;cursor:pointer}
+.use:hover{background:var(--accent-soft)}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+ol.steps{margin:0;padding-left:20px;display:grid;gap:6px;max-width:72ch}
+.src{font-size:.78rem;color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){.bar i{transition:width .25s ease}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<header>
+  <a class="back" href="/">← Back to Lifts</a>
+  <span class="eyebrow">Meats weighed cooked</span>
+  <h1>Meal Prep Switcher</h1>
+  <p class="lede">Pick a chicken style and a turkey option and the rest of the day rebalances to keep your macros where they were. The olive oil at dinner absorbs any extra fat from the sauce, and the rice absorbs the extra carbs and calories. Breakfast, the Musashi bar and the snack stay fixed.</p>
+</header>
+
+<div class="grid">
+  <form class="panel controls" id="controls" onsubmit="return false">
+    <fieldset>
+      <legend>Daily target</legend>
+      <div class="seg" id="targetSeg" role="group" aria-label="Daily target">
+        <button type="button" data-t="today">My current day</button>
+        <button type="button" data-t="p1">Phase 1 · 2,300</button>
+        <button type="button" data-t="p2">Phase 2 · 2,900</button>
+      </div>
+      <p class="hint" id="targetHint"></p>
+    </fieldset>
+
+    <fieldset>
+      <legend>Dinner</legend>
+      <label for="chicken">Chicken style (1 portion)<select id="chicken"></select></label>
+      <label for="dCarb">Carb<select id="dCarb"></select></label>
+      <label for="dVeg">Veg<select id="dVeg"></select></label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Turkey meal</legend>
+      <label for="turkey">Turkey option (1 portion)<select id="turkey"></select></label>
+      <label for="tCarb">Carb<select id="tCarb"></select></label>
+      <label for="tVeg">Veg<select id="tVeg"></select></label>
+      <p class="hint">Add a carb here and the flexible calories split evenly between both meals. Useful in Phase 2, when one plate of rice gets very large.</p>
+    </fieldset>
+
+    <fieldset>
+      <legend>Fixed foods</legend>
+      <label for="rc">Rice cakes (2 a day)<select id="rc">
+        <option value="50">50 kcal each (what you log)</option>
+        <option value="35">35 kcal each (Quaker Lightly Salted label)</option>
+        <option value="0">Skip them</option>
+      </select></label>
+      <div class="checks" id="fixedChecks"></div>
+    </fieldset>
+  </form>
+
+  <div class="tag" aria-live="polite">
+    <div>
+      <span class="eyebrow" id="tagEyebrow"></span>
+      <div class="kcal"><span class="k num" id="dayKcal"></span><span id="dayPill"></span></div>
+    </div>
+    <div class="carbline" id="carbOut"></div>
+    <div id="alerts"></div>
+    <div class="macros" id="macros"></div>
+    <div class="tbl"><table id="dayTable"></table></div>
+    <button type="button" class="copy" id="copyBtn">Copy the day as text</button>
+  </div>
+</div>
+
+<nav class="tabs" aria-label="Sections">
+  <a href="#chicken-styles">Chicken styles</a>
+  <a href="#turkey-options">Turkey</a>
+  <a href="#offsets">Rice table</a>
+  <a href="#swaps">Carb & veg swaps</a>
+  <a href="#portioning">Portioning & Instant Pot</a>
+  <a href="#freezer">Freezer & safety</a>
+  <a href="#sources">Sources</a>
+</nav>
+
+<section id="chicken-styles">
+  <h2>Eleven chicken styles</h2>
+  <p class="prose">Every batch is 5 lb of boneless skinless breast cut into <b>10 portions</b> (about 175 g cooked chicken plus a tenth of the sauce). Per-portion macros are the whole batch's ingredients divided by 10. The red number is how much more each portion costs than your plain 6 oz of cooked chicken (281 kcal); the switcher takes that out of the carb.</p>
+  <div class="cards" id="chickenCards"></div>
+</section>
+
+<section id="turkey-options">
+  <h2>Four turkey options</h2>
+  <div class="prose">
+    <p>99% lean turkey is breast meat at about 1% fat and dries out easily. It does best in saucy dishes, with grated onion or mushroom mixed in, at no more than medium-high heat, broken into larger crumbles, and taken to 165°F and no further (<a href="https://www.foodrepublic.com/1748655/how-to-prevent-dry-ground-turkey-ratio/" target="_blank" rel="noopener">Food Republic</a>; <a href="https://www.tastingtable.com/2263175/how-cook-ground-turkey-not-dry/" target="_blank" rel="noopener">Tasting Table</a>).</p>
+    <p>Cut every 5 lb batch into <b>16 portions</b> (about 4 oz cooked each). Mix the sauce through, weigh the whole batch, divide by 16 and fill each container to that weight. Meatballs: make 96 (6 per portion), or weigh the cooked tray and divide by 16.</p>
+  </div>
+  <div class="cards" id="turkeyCards"></div>
+</section>
+
+<section id="offsets">
+  <h2>Dinner rice for every combination</h2>
+  <p class="prose" id="offsetIntro"></p>
+  <div class="tbl"><table id="offsetTable"></table></div>
+</section>
+
+<section id="swaps">
+  <h2>Carb and veg swaps</h2>
+  <div class="prose">
+    <p>Swap carbs at equal calories by weight, not cups. The switcher does the math, but the rule is simple: grams to keep = calories left for the carb ÷ kcal per gram. Every carb value comes from the USDA FoodData Central record in the source column, read through a mirror site.</p>
+    <p>Black beans and quinoa trade some carbs for 3 to 10 g more protein and much more fiber. Potatoes give the biggest plate per calorie; pasta and naan give the smallest. Carb Balance tortillas are effectively a low-carb day.</p>
+  </div>
+  <div class="tbl"><table id="carbTable"></table></div>
+  <h3>Veg</h3>
+  <p class="prose">The default veg portion is the weight that matches 1 cup of cooked broccoli (55 kcal), so most swaps barely move the carb. The switcher counts the exact difference anyway.</p>
+  <div class="tbl"><table id="vegTable"></table></div>
+  <div class="prose">
+    <p>Roasting broccoli in oil nearly doubles it to 67 kcal/100 g (<a href="https://getfoodfacts.com/nutrition/broccoli" target="_blank" rel="noopener">GetFoodFacts</a>). Measure the oil and take it out of the carb.</p>
+    <p><b>Pairings</b> (cuisine convention, not a source): tinga, salsa verde, cilantro-lime and taco turkey with corn tortillas, rice or black beans plus peppers or zucchini. Buffalo with russet or baby potatoes and carrots, or a Carb Balance wrap. BBQ and hot honey with sweet potato and green beans. Honey-garlic, gochujang and Thai peanut with jasmine rice or rice noodles and broccoli or green beans. Greek lemon and Italian turkey with pita, couscous, orzo or farro plus zucchini or asparagus. Butter chicken with basmati or naan and cauliflower.</p>
+  </div>
+  <h3>Bulk carb cooking</h3>
+  <div class="prose">
+    <p>White or jasmine rice: rinse, 1:1 water, <b>3 min High, 10 min NR</b>; doubling or tripling uses the same time (<a href="https://www.pressurecookrecipes.com/instant-pot-rice/" target="_blank" rel="noopener">Pressure Cook Recipes</a>). Brown rice: 1:1, 15 min High, 5 min NR (<a href="https://www.pressurecookrecipes.com/instant-pot-brown-rice/" target="_blank" rel="noopener">PCR</a>). Quinoa: 1:1, 0 to 1 min, 10 to 12 min NR (<a href="https://www.pressurecookrecipes.com/instant-pot-quinoa/" target="_blank" rel="noopener">PCR</a>). Baby potatoes 5 min, medium Yukons 6 min, with 1 cup water in a 6 qt or 2 cups in an 8 qt (<a href="https://spicecravings.com/wprm_print/instant-pot-boiled-potatoes" target="_blank" rel="noopener">Spice Cravings</a>). Whole sweet potatoes on a trivet with 1½ cups water: 20 min for 2" thick, 30 min for 3 to 4", then 10 NR (<a href="https://wholefully.com/wprm_print/instant-pot-sweet-potatoes" target="_blank" rel="noopener">Wholefully</a>).</p>
+    <p>Rice and potatoes can't share a pot with the chicken, so run them after the protein cycle or roast potatoes while the pot works. Weigh each cooked carb batch and portion by grams; cup measures drift with water absorption.</p>
+  </div>
+</section>
+
+<section id="portioning">
+  <h2>Portioning and Instant Pot rules</h2>
+  <div class="prose">
+    <p>Split each batch into a set number of equal containers and count macros from the ingredients. Cooking loss, sauce reduction and how much juice the chicken releases then don't affect your numbers.</p>
+    <ul>
+      <li><b>Chicken: 2 portions per pound raw</b>, so 10 per 5 lb. A 4.6 lb pack makes 9, and the per-portion macros stay about the same.</li>
+      <li><b>99% turkey: about 3 portions per pound raw</b>, so 16 per 5 lb.</li>
+    </ul>
+  </div>
+  <ol class="steps">
+    <li>Shred the meat into its sauce and stir well so the sauce is evenly mixed.</li>
+    <li>Weigh the whole pot, subtract the empty pot weight, and divide by 10 (or 16 for turkey). That's your portion weight.</li>
+    <li>Weigh each container to that number. The last one will be a little over or under, and that's fine.</li>
+  </ol>
+  <div class="prose">
+    <p>If you'd rather keep weighing 6 oz of meat, lift the meat out of the sauce, weigh 170 g into each container, then divide the sauce evenly. Don't weigh 6 oz of sauced meat. Cooked meat values vary about ±5% with how dry you cook it, so being consistent about what you weigh matters more than the exact number.</p>
+    <h3>Pressure time follows thickness</h3>
+    <p>Frozen-breast timings run 11 to 12 min for 6 to 8 oz pieces, 13 to 14 min for 9 to 10 oz and 16 min for 12 oz, each with a 10 min natural release, and the number of breasts doesn't change the time (<a href="https://kristineskitchenblog.com/how-to-cook-frozen-chicken-breasts-instant-pot/" target="_blank" rel="noopener">Kristine's Kitchen</a>). <b>For 5 lb of fresh breasts, use 10 to 12 min High plus 10 min natural release (NR)</b>, and expect 15 to 25 min to come up to pressure. Halve any breast over about 12 oz. Frozen breasts must be separate pieces, not a block. Stacking 2 to 3 layers works, but check that the top layer reads 165°F.</p>
+    <h3>Avoiding BURN</h3>
+    <p>Thin liquid on the bottom, then the meat, then thick sauce on top, <b>not stirred</b>. Minimum thin liquid is <b>1½ cups in a 6 qt and 2 cups in an 8 qt</b>; tomato products and thick sauces don't count. Deglaze after any sauté, and never add cornstarch or flour before pressure cooking (<a href="https://www.paintthekitchenred.com/instant-pot-burn-message/" target="_blank" rel="noopener">Paint the Kitchen Red</a>). Breasts release a lot of juice, so a 5 lb batch still needs only the pot minimum. Thickeners and dairy (slurry, yogurt, butter, peanut powder) go in after the pressure cycle.</p>
+    <p>The 5 lb scaling is arithmetic from the cited 1.5 to 2.5 lb recipes; no source tested these styles at 5 lb. Treat the first batch of each as calibration: time it, check 165°F in the thickest piece, and split it into the set number of portions.</p>
+    <h3>Sous vide and air fryer</h3>
+    <p>For 5 lb of breasts, use 4 to 5 gallon bags laid flat in a single layer (<a href="https://www.breville.com/inspiration/en-us/recipes/commercial/essential-guide-to-skinless-chicken-breast" target="_blank" rel="noopener">Breville</a>), 150°F for 2½ to 3 h, ice bath, then straight into the freezer in the same sealed bags. Bag 2 breasts (about 1 lb raw, 2 portions) per bag. Reheat in a 150°F bath for 30 to 45 min from thawed, or about 1 h from frozen. The air fryer is a finisher: about 1 lb of cutlets per round at 375 to 380°F for 10 to 14 min (<a href="https://dashfordinner.com/wprm_print/air-fryer-meal-prep-chicken" target="_blank" rel="noopener">Dash for Dinner</a>). It's best for re-crisping a reheated portion of buffalo, BBQ or tinga for 3 to 5 min (unsourced, so watch the first batch).</p>
+  </div>
+</section>
+
+<section id="freezer">
+  <h2>Freeze everything the day you cook</h2>
+  <p class="prose">Cooked poultry keeps <b>2 to 6 months frozen</b> for best quality, and frozen food stays safe indefinitely (<a href="https://www.foodsafety.gov/food-safety-charts/cold-food-storage-charts" target="_blank" rel="noopener">FoodSafety.gov</a>). Rotate each batch within 2 to 3 months for best taste. Freezing doesn't change the macros.</p>
+  <ol class="steps">
+    <li><b>Cool fast.</b> Into the fridge within 2 hours (1 hour above 90°F). Split a full pot into shallow containers, or set the insert in ice water and stir 10 to 15 min first (<a href="https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/leftovers-and-food-safety" target="_blank" rel="noopener">USDA FSIS</a>).</li>
+    <li><b>Portion, then freeze.</b> Fill to the portion weight, leave ½ inch of headspace, and chill an hour or two before the freezer. Ten warm containers at once warms the freezer.</li>
+    <li><b>Label</b> each container with style, date, kcal and protein from the cards above.</li>
+    <li><b>Thaw</b> overnight in the fridge and eat within 3 to 4 days, or microwave from frozen. Reheat to <b>165°F</b>, covered, stirring halfway.</li>
+    <li><b>Keep some liquid with it.</b> A few tablespoons of sauce or cooking liquid per container prevents freezer burn and dry chicken.</li>
+  </ol>
+  <div class="prose">
+    <p><b>Rice.</b> <i>Bacillus cereus</i> spores survive cooking, and slow cooling lets them make a heat-stable toxin that reheating won't destroy. Cool rice from 135°F to 70°F within 2 hours and to 41°F within 4 more by spreading it thin on a sheet pan, then portion and freeze. Reheat only the portion you're about to eat (<a href="https://brunswick.ces.ncsu.edu/2024/02/safety-of-leftover-rice/" target="_blank" rel="noopener">NC State Extension</a>).</p>
+    <p><b>Carbs.</b> Rice, quinoa, farro and couscous freeze very well, so pack them with the chicken and add 1 tbsp water before microwaving. Pasta and orzo freeze fine if cooked 1 to 2 min short. Sweet potatoes freeze well mashed or cubed. Plain boiled or baked white potatoes go watery and grainy, so cook those fresh or buy frozen roasted potatoes. Freeze tortillas, pita and naan separately from saucy meat.</p>
+    <p><b>Veg.</b> Cooked broccoli goes mushy. Pack containers with <b>frozen raw broccoli</b> (it steams as the meal reheats; pick "Broccoli, frozen" in the switcher), or steam it 2 min before freezing. Green beans, carrots and cauliflower hold up best; zucchini and asparagus go soft.</p>
+    <p><b>Sous vide shelf life.</b> USDA data shows lean chicken is safe after 2.7 min at 150°F or 8.9 min at 145°F (<a href="https://www.americastestkitchen.com/articles/8003-is-it-safe-to-cook-chicken-below-165-degrees" target="_blank" rel="noopener">America's Test Kitchen, citing FSIS</a>). Baldwin's tables pasteurize 50 mm breast in about 2¼ h at 149°F, and sealed pouches chilled in an ice bath and held below 38°F keep 3 to 4 weeks by his guidance, or up to a year frozen (<a href="https://douglasbaldwin.com/sous-vide.html" target="_blank" rel="noopener">Baldwin</a>). Anova says "at least a week" (<a href="https://anovaculinary.com/en-ca/blogs/blog/batch-cooking-meal-prep" target="_blank" rel="noopener">Anova</a>). USDA doesn't endorse the longer times and many home fridges run warmer than 38°F. Once a bag is opened, the 3 to 4 day rule applies.</p>
+  </div>
+</section>
+
+<section id="sources">
+  <h2>Where the numbers come from</h2>
+  <div class="prose">
+    <p>Your fixed foods and the plain meats use the values from your original doc (USDA FoodData Central SR Legacy records read through a mirror site). The peanut butter and olive oil added in the cut plan use standard USDA values for natural smooth peanut butter (about 597 kcal/100 g) and olive oil (119 kcal/tbsp), not re-fetched. Sauce macros are calculations from ingredient lists using standard label values (appendix below); treat them as ±10% and check them against the labels you buy.</p>
+    <p>Daily targets come from your <a href="https://claude.ai/code/artifact/d8f3e9cd-86e2-492f-a0f0-7c0fee166dce" target="_blank" rel="noopener">Lean Gain Nutrition Plan</a>: Phase 1 is 2,300 kcal (160 P / 65 F / 270 C), Phase 2 is 2,900 kcal (160 P / 80 F / 385 C).</p>
+  </div>
+  <div class="tbl"><table id="fixedTable"></table></div>
+  <h3>Appendix: sauce ingredient values</h3>
+  <p class="src">Standard label or USDA-type values, not fetched. Verify on your labels.</p>
+  <div class="tbl"><table id="appendix"></table></div>
+</section>
+</div>
+
+<script>
+const L = (u,t)=>`<a href="${u}" target="_blank" rel="noopener">${t}</a>`;
+
+/* fixed foods: kcal, P, C, F, fiber */
+const FIXED = [
+  {meal:"Breakfast", items:[
+    {id:"oats", name:"Rolled oats", amt:"¾ cup dry (61 g)", k:230,p:8.0,c:41.1,f:4.0,fb:6.1, src:L("https://getfoodfacts.com/food/cereals-oats-regular-and-quick-not-fortified-dry-173904","FDC 173904")},
+    {id:"milk", name:"2% milk", amt:"¾ cup (183 g)", k:92,p:6.0,c:8.8,f:3.6,fb:0, src:L("https://getfoodfacts.com/food/milk-reduced-fat-fluid-2-milkfat-with-added-vitamin-a-and-vitamin-d-171267","FDC 171267")},
+    {id:"flax", name:"Ground flax", amt:"1 tbsp (7 g)", k:37,p:1.3,c:2.0,f:3.0,fb:1.9, src:"USDA"},
+    {id:"chia", name:"Chia", amt:"1 tbsp (12 g)", k:58,p:2.0,c:5.1,f:3.7,fb:4.1, src:"USDA"},
+    {id:"whey", name:"Whey isolate", amt:"1 scoop", k:110,p:25.0,c:1.0,f:0.5,fb:0, src:"Typical scoop; "+L("https://verifiedsupplementdata.com/protein/isopure-vs-dymatize-iso100/","ISO100 is 120")}
+  ]},
+  {meal:"Protein snack", items:[
+    {id:"musashi", name:"Musashi bar", amt:"1 bar", k:320,p:46.0,c:26.0,f:5.0,fb:4.0, src:"Your label"}
+  ]},
+  {meal:"Snack", items:[
+    {id:"uncr", name:"Uncrustable PB & grape", amt:"1 (57 g)", k:210,p:6.0,c:28.0,f:9.0,fb:2.0, src:L("https://hannaford.com/groceries/frozen/frozen-appetizers-snacks/smuckers-uncrustables-peanut-butter-grape-jelly-sandwich-10-ct-frozen-20-oz-box.html","Hannaford label")},
+    {id:"rc", name:"Rice cakes", amt:"2", k:100,p:1,c:20,f:0,fb:0, src:L("https://www.heb.com/product-detail/quaker-lightly-salted-rice-cakes/103621","Quaker label is 35 each")},
+    {id:"pb", name:"Natural peanut butter", amt:"2 tbsp (32 g), weighed", k:191,p:7.1,c:7.1,f:16.4,fb:1.6, src:"USDA standard value"}
+  ]}
+];
+/* olive oil per gram; 1 tbsp = 13.5 g, 1 tsp = 4.5 g. It is the fat lever. */
+const OIL = {k:8.84, f:1, tbsp:13.5};
+
+const CHICKEN = [
+  {id:"plain6", name:"Plain, 6 oz cooked (weighed)", k:281,p:52.7,c:0,f:6.1},
+  {id:"plainb", name:"Plain batch portion (1 of 10)", k:272,p:51,c:0,f:6},
+  {id:"buffalo", name:"Buffalo", k:298,p:52,c:6,f:6.0},
+  {id:"greek", name:"Greek lemon-oregano", k:303,p:52,c:4,f:7.4},
+  {id:"bbqns", name:"BBQ, no-sugar-added sauce", k:309,p:51,c:6,f:7.5},
+  {id:"cilime", name:"Cilantro-lime", k:315,p:52,c:9,f:6.1},
+  {id:"verde", name:"Salsa verde", k:326,p:52,c:11,f:6.6},
+  {id:"tinga", name:"Chicken tinga", k:328,p:53,c:9,f:8.1},
+  {id:"gochu", name:"Gochujang", k:328,p:52,c:9,f:7.7},
+  {id:"honey", name:"Honey-garlic / teriyaki (lightened)", k:363,p:53,c:22,f:6.1},
+  {id:"hothoney", name:"Hot honey", k:366,p:51,c:22,f:7.6},
+  {id:"butter", name:"Butter chicken (lightened)", k:375,p:58,c:13,f:9.4},
+  {id:"peanut", name:"Thai peanut (powdered PB)", k:376,p:56,c:12,f:9.6},
+  {id:"bbqreg", name:"BBQ, regular sauce", k:389,p:51,c:25,f:7.7}
+];
+
+const TURKEY = [
+  {id:"t4", name:"Plain 99%, 4 oz cooked (weighed)", k:157,p:32.9,c:0,f:2.7},
+  {id:"tplain", name:"Plain batch portion (1 of 16)", k:159,p:34,c:0,f:2.8},
+  {id:"ttaco", name:"Chipotle taco turkey", k:192,p:34,c:6,f:3.9},
+  {id:"tital", name:"Italian turkey in crushed tomato", k:204,p:35,c:8,f:3.9},
+  {id:"tmeat", name:"Turkey meatballs (egg + panko)", k:187,p:35,c:3,f:3.8}
+];
+
+/* carbs per 100 g; unit = grams per household unit */
+const CARBS = [
+  {id:"none", name:"None"},
+  {id:"myrice", name:"Your white rice (weighed dry)", k:369.6,c:82.6,p:8.7,f:0,fb:0, unit:46, uname:"serving", dry:true, fdc:["label","#sources"]},
+  {id:"white", name:"White / jasmine rice", k:130,c:28.2,p:2.7,f:0.3,fb:0.4, unit:158, uname:"cup", fdc:["168878","https://getfoodfacts.com/food/rice-white-long-grain-regular-enriched-cooked-168878"]},
+  {id:"brown", name:"Brown rice", k:123,c:25.6,p:2.7,f:1.0,fb:1.6, unit:201, uname:"cup", fdc:["169704","https://getfoodfacts.com/nutrition/brown-rice"]},
+  {id:"quinoa", name:"Quinoa", k:120,c:21.3,p:4.4,f:1.9,fb:2.8, unit:185, uname:"cup", fdc:["168917","https://getfoodfacts.com/nutrition/quinoa"]},
+  {id:"couscous", name:"Couscous", k:112,c:23.2,p:3.8,f:0.2,fb:1.4, unit:157, uname:"cup", fdc:["169700","https://getfoodfacts.com/nutrition/couscous"]},
+  {id:"pasta", name:"Pasta / orzo", k:158,c:30.9,p:5.8,f:0.9,fb:1.8, unit:140, uname:"cup", fdc:["169737","https://getfoodfacts.com/food/pasta-cooked-enriched-without-added-salt-169737"]},
+  {id:"noodle", name:"Rice noodles", k:108,c:24.0,p:1.8,f:0.2,fb:1.0, unit:176, uname:"cup", fdc:["168914","https://getfoodfacts.com/nutrition/rice-noodles"]},
+  {id:"farro", name:"Farro (spelt proxy)", k:127,c:26.5,p:5.5,f:0.9,fb:3.9, unit:200, uname:"cup", fdc:["169746","https://getfoodfacts.com/nutrition/spelt"]},
+  {id:"beans", name:"Black beans", k:132,c:23.7,p:8.9,f:0.5,fb:8.7, unit:172, uname:"cup", fdc:["173735","https://getfoodfacts.com/nutrition/black-beans"]},
+  {id:"russet", name:"Baked russet (with skin)", k:93,c:21.1,p:2.5,f:0.1,fb:2.2, unit:147, uname:"medium", fdc:["170093","https://getfoodfacts.com/food/potatoes-baked-flesh-and-skin-without-salt-170093"]},
+  {id:"baby", name:"Baby / Yukon potato, boiled", k:87,c:20.1,p:1.9,f:0.1,fb:1.8, unit:156, uname:"cup", fdc:["170438","https://getfoodfacts.com/food/potatoes-boiled-cooked-in-skin-flesh-without-salt-170438"]},
+  {id:"sweet", name:"Sweet potato, baked", k:90,c:20.7,p:2.0,f:0.1,fb:3.3, unit:114, uname:"medium", fdc:["168483","https://getfoodfacts.com/food/sweet-potato-cooked-baked-in-skin-flesh-without-salt-168483"]},
+  {id:"corn", name:"Corn tortilla", k:218,c:44.6,p:5.7,f:2.9,fb:6.3, unit:46, uname:"XL tortilla", fdc:["175036","https://getfoodfacts.com/food/tortillas-ready-to-bake-or-fry-corn-175036"]},
+  {id:"flour", name:"Flour tortilla", k:306,c:49.4,p:8.2,f:8.1,fb:3.4, unit:48, uname:"tortilla", fdc:["175037","https://getfoodfacts.com/food/tortillas-ready-to-bake-or-fry-flour-refrigerated-175037"]},
+  {id:"pita", name:"Pita, white", k:275,c:55.3,p:9.1,f:1.2,fb:2.1, unit:58, uname:"pita", fdc:["174915","https://getfoodfacts.com/nutrition/pita-bread"]},
+  {id:"naan", name:"Naan", k:311,c:50.2,p:11.1,f:7.3,fb:5.2, unit:44, uname:"small piece", fdc:["2707613","https://getfoodfacts.com/nutrition/naan-bread"]},
+  {id:"cb", name:"Mission Carb Balance tortilla", k:165,c:44.7,p:12.9,f:7.8,fb:37.6, unit:42.5, uname:"tortilla", fdc:["label","https://hannaford.com/groceries/product/mission-carb-balance-restaurant-style-soft-taco-flour-tortillas-8-ct-12-oz-pkg/394896"]}
+];
+
+/* veg per 100 g; g = default portion (55 kcal equivalent) */
+const VEG = [
+  {id:"none", name:"None"},
+  {id:"broc", name:"Broccoli", k:35,p:2.4,c:7.2,f:0.4,fb:3.3, g:156, note:"baseline, 1 cup", fdc:["169967","https://getfoodfacts.com/food/broccoli-cooked-boiled-drained-without-salt-169967"]},
+  {id:"brocf", name:"Broccoli, frozen raw (steams on reheat)", k:28,p:3.1,c:5.4,f:0.1,fb:3.0, g:196, note:"best for freezer meals, ~1½ cups", fdc:["170380","https://getfoodfacts.com/nutrition/broccoli"]},
+  {id:"gb", name:"Green beans (frozen)", k:28,p:1.5,c:6.5,f:0.2,fb:3.0, g:196, note:"best bulk-frozen option, ~1½ cups", fdc:["169963","https://getfoodfacts.com/food/beans-snap-green-frozen-cooked-boiled-drained-without-salt-169963"]},
+  {id:"cauli", name:"Cauliflower", k:23,p:1.8,c:4.1,f:0.5,fb:2.3, g:239, note:"bigger plate, ~1.9 cups", fdc:["170397","https://getfoodfacts.com/food/cauliflower-cooked-boiled-drained-without-salt-170397"]},
+  {id:"brus", name:"Brussels sprouts", k:36,p:2.6,c:7.1,f:0.5,fb:2.6, g:153, note:"gram-for-gram swap, ~1 cup", fdc:["169971","https://getfoodfacts.com/food/brussels-sprouts-cooked-boiled-drained-without-salt-169971"]},
+  {id:"carrot", name:"Carrots", k:35,p:0.8,c:8.2,f:0.2,fb:3.0, g:157, note:"gram-for-gram swap, ~1 cup", fdc:["170394","https://getfoodfacts.com/food/carrots-cooked-boiled-drained-without-salt-170394"]},
+  {id:"asp", name:"Asparagus (frozen)", k:18,p:3.0,c:1.9,f:0.4,fb:1.6, g:306, note:"9 g protein at 55 kcal", fdc:["169209","https://getfoodfacts.com/food/asparagus-frozen-cooked-boiled-drained-without-salt-169209"]},
+  {id:"zuc", name:"Zucchini", k:15,p:1.1,c:2.7,f:0.4,fb:1.0, g:367, note:"lowest density", fdc:["169292","https://getfoodfacts.com/food/squash-summer-zucchini-includes-skin-cooked-boiled-drained-without-salt-169292"]}
+];
+
+const TARGETS = {
+  p1:{label:"Phase 1 cut", k:2300, p:160, f:65, c:270, fb:32},
+  p2:{label:"Phase 2 lean gain", k:2900, p:160, f:80, c:385, fb:40}
+};
+
+/* recipes */
+const R = {
+  tinga:{title:"Chicken tinga", body:`<p>Base: 2 lb chicken, onion, chipotles in adobo, 1 cup crushed tomatoes and 1 cup water at 10 min High. One reader hit BURN at that liquid level and had to add another cup of water (${L("https://alexandracooks.com/2020/09/11/instant-pot-chicken-tinga/","Alexandra's Kitchen")}).</p>
+<p><b>5 lb batch:</b> 2 onions (sliced), 6 garlic cloves, 1 tbsp olive oil (the original's 5 tbsp adds a lot for little gain), ½ cup chipotles in adobo plus 2 tbsp adobo, 2½ cups crushed tomatoes, 2 cups broth, cumin, oregano, salt.</p>
+<p><b>IP:</b> Sauté onion in the oil 4 min, add garlic and chipotles, deglaze with all the broth, lay the chicken in, then <b>spoon the tomatoes over the top without stirring</b>. 12 min High, 10 min NR. Shred in the pot, then Sauté 5 to 10 min until the sauce clings. Broil the sauced tinga for crisp edges if you like.</p>`,
+    frz:"Freezes very well; the tomato sauce protects the meat. Pack with plenty of sauce and press out air."},
+  hothoney:{title:"Hot honey", body:`<p>The source pressure-cooks chicken with spices and broth, <b>discards the juices</b>, and tosses the shredded meat in a separately simmered glaze of honey, cider vinegar and chili flakes (${L("https://www.sixsistersstuff.com/recipe/instant-pot-hot-honey-chicken-sandwiches/","Six Sisters' Stuff")}). Its ½ cup broth is below the pot minimum.</p>
+<p><b>5 lb batch:</b> 2 cups broth, 1 tbsp oil, smoked paprika, garlic powder, salt. Glaze: <b>¾ cup honey (12 tbsp)</b>, 2½ tbsp cider vinegar, 1 to 2 tbsp chili flakes, simmered 3 to 5 min.</p>
+<p><b>IP:</b> Broth, chicken, spice rub. 12 min High, 10 min NR. Drain, shred, toss with the glaze. Best texture: sous vide whole breasts at 150°F for 2½ to 3 h, slice, and brush with glaze.</p>`,
+    frz:"Toss the meat in the glaze before portioning so every container gets an equal share. Add 2 tbsp of the cooking liquid per container to keep it moist (about 2 kcal). Honey firms up frozen and loosens on reheat."},
+  buffalo:{title:"Buffalo", body:`<p>MasonFit's no-butter version (2.5 lb breast, 1 cup Frank's, onion, garlic, ranch seasoning, 1 tbsp oil; 10 min High + 10 NR) is 120 kcal and 19 g protein per 140 g (${L("https://masonfit.com/wprm_print/instant-pot-buffalo-chicken-2","MasonFit")}). Frank's RedHot Original is 0 kcal per serving (${L("https://www.mccormick.com/products/franks-redhot-original-12-oz","McCormick")}).</p>
+<p><b>5 lb batch:</b> 1 cup broth on the bottom, 2 onions (sliced), 10 garlic cloves, chicken, ¼ cup dry ranch seasoning, 2 cups Frank's poured over the top. No oil needed.</p>
+<p><b>IP:</b> 12 min High, 10 min NR. Shred, then reduce on Sauté 5 min. For crisp edges, spread thin under a high broiler, rack 8 to 10 in from the element, 4 to 5 min, in 2 to 3 batches (${L("https://40aprons.com/instant-pot-chicken-carnitas/","40 Aprons")}).</p>`,
+    frz:"Freezes very well. To crisp after reheating, broil 2 to 3 min or air fry at 400°F for 3 to 4 min."},
+  bbq:{title:"BBQ pulled chicken", body:`<p>Base: 2 lb chicken, 1 cup BBQ sauce, 1 cup water, onion, smoked paprika, Worcestershire; deglaze with the water, sauce on top, 15 min High + 10 NR (${L("https://biteswithbri.com/wprm_print/9055","Bites with Bri")}).</p>
+<p><b>5 lb batch:</b> 1 tbsp oil, 1 red onion, spices, 1 tbsp Worcestershire, 1½ cups water or broth on the bottom, chicken, <b>1 cup BBQ sauce on top, plus 1 cup stirred in after shredding</b> (less sauce under pressure lowers BURN risk).</p>
+<p><b>IP:</b> 12 min High, 10 min NR. The sauce you buy sets the cost: no-sugar-added (about 40 kcal per ½ cup) versus regular (about 60 kcal per 2 tbsp) is an 80 kcal difference per portion.</p>`,
+    frz:"Freezes very well. Stir the second cup of sauce in before portioning, not at reheat, so it's counted evenly."},
+  verde:{title:"Salsa verde", body:`<p>Base: 1.5 lb chicken, a 16 oz jar of salsa verde and ½ onion, no added liquid or oil, 12 min High + 5 NR, or 17 min from frozen (${L("https://madaboutfood.co/instant-pot-salsa-verde-shredded-chicken/","Mad About Food")}). That site's 12 g fat per serving is too high for breast; recomputed with breast it's 4.5 g.</p>
+<p><b>5 lb batch:</b> 1 cup broth on the bottom, 1½ onions, chicken, <b>three 16 oz jars of salsa verde</b> on top, cumin.</p>
+<p><b>IP:</b> 12 min High, 10 min NR. Shred, then reduce 5 min. Jars range from about 10 to 20 kcal per 2 tbsp; this assumes 150 kcal per jar.</p>`,
+    frz:"Freezes very well. It's wetter than the others, so leave ½ inch of headspace."},
+  honey:{title:"Honey-garlic / teriyaki (lightened)", body:`<p>The base uses ½ cup honey per 2 lb and adds the cornstarch slurry after cooking (${L("https://showmetheyummy.com/instant-pot-honey-garlic-chicken/","Show Me the Yummy")}). Scaled straight to 5 lb that's 1¼ cups honey, about 1,280 kcal from honey alone.</p>
+<p><b>Lightened 5 lb batch:</b> 2 cups broth, ½ cup low-sodium soy, <b>½ cup honey</b>, ¼ cup ketchup, ¼ cup sriracha, 12 garlic cloves, ginger.</p>
+<p><b>IP:</b> Liquids on the bottom, chicken on top. 12 min High, 10 min NR. Remove the chicken. Whisk 4 tbsp cornstarch into ½ cup cold water and stir it in gradually on Sauté for 1 to 3 min. Return the chicken, sliced or shredded. Swapping half the honey for allulose roughly halves the honey calories.</p>`,
+    frz:"Cornstarch sauces can turn watery or spongy after freezing; stir well halfway through reheating. To avoid it, use 3 tbsp cornstarch and reduce the sauce a few extra minutes."},
+  greek:{title:"Greek lemon-oregano", body:`<p>Base: 2 lb chicken, red onion, garlic, oregano, lemon juice, red wine vinegar and ¼ cup broth, 199 kcal and 29 g protein per 6 oz (${L("https://www.slenderkitchen.com/recipe/easy-greek-chicken-instant-pot-slow-cooker-or-stovetop","Slender Kitchen")}). Its liquid and 6 to 7 min time are too low for 5 lb of whole breasts.</p>
+<p><b>5 lb batch:</b> 1½ cups broth, ½ cup lemon juice, 2 tbsp red wine vinegar, 2 red onions, 8 garlic cloves, 1 tbsp olive oil, 2 tbsp oregano, salt and pepper.</p>
+<p><b>IP:</b> 10 min High, 10 min NR. Slice or shred. Preferred for sliceable breasts: sous vide at 150°F for 2½ to 3 h with lemon, garlic and oregano in the bag; Anova rates 150°F tender and juicy and good cold (${L("https://recipes.anovaculinary.com/recipe/chicken-breast","Anova")}).</p>`,
+    frz:"The leanest sauce, so it dries out most. Add 2 to 3 tbsp cooking liquid per container. Sous vide breasts frozen in their sealed bags and sliced after thawing give the best texture of any option."},
+  gochu:{title:"Gochujang", body:`<p>Base, no honey, sugar or soy: 2 tbsp gochujang, 1 cup stock, 1 tbsp sesame oil, seasoned rice vinegar, ginger, garlic; 10 min High + 5 NR (${L("https://www.servedfromscratch.com/instant-pot-gochujang-chicken-lettuce-wraps/","Served From Scratch")}).</p>
+<p><b>5 lb batch:</b> 2 cups stock, 1 onion, 8 garlic cloves, ginger, 1 tbsp sesame oil, 5 tbsp seasoned rice vinegar, chicken, then <b>6 tbsp gochujang dolloped on top</b>.</p>
+<p><b>IP:</b> 12 min High, 10 min NR. Shred and reduce. Gochujang contains rice syrup, which is why it costs more than buffalo.</p>`,
+    frz:"Freezes very well."},
+  butter:{title:"Butter chicken (lightened)", body:`<p>The original pressure-cooks only tomatoes and chicken, then stirs in 4 oz butter and 4 oz cream per pound of meat (${L("https://twosleevers.com/instant-pot-butter-chicken/","Two Sleevers")}). Scaled ×5, that's 4,000+ kcal of dairy.</p>
+<p><b>Lightened 5 lb batch:</b> 1½ cups broth on the bottom, chicken, then four 14.5 oz cans diced tomatoes, 20 garlic cloves, 2 tbsp ginger, 5 tsp each garam masala, cumin, turmeric and smoked paprika, plus cayenne, layered on top unstirred.</p>
+<p><b>IP:</b> 10 min High, 10 min NR. Remove the chicken and blend the sauce. Let it cool slightly, then stir in <b>2 tbsp butter and 2 cups plain nonfat Greek yogurt (tempered)</b> with 1 tsp garam masala. The yogurt adds about 5 g protein per portion.</p>`,
+    frz:"Yogurt can go grainy; whisk the sauce smooth after reheating. Or freeze in the tomato-butter sauce and stir 3 tbsp (45 g) nonfat Greek yogurt into each portion after reheating; same macros."},
+  peanut:{title:"Thai peanut (powdered PB)", body:`<p>The base (1.5 lb diced breast, ⅓ cup PB, coconut milk, honey, coconut aminos; 5 min High) is 543 kcal and 25 g fat per portion (${L("https://lexiscleankitchen.com/wprm_print/instant-pot-thai-peanut-chicken","Lexi's Clean Kitchen")}).</p>
+<p><b>Lightened 5 lb batch:</b> 1½ cups broth, ½ cup coconut aminos, 1⅔ cups light coconut milk, 2 tbsp honey, 5 tbsp lime juice, 2 tbsp chili-garlic paste, then 1½" diced chicken.</p>
+<p><b>IP:</b> <b>6 min High</b> (diced), quick release. Stir in <b>1 cup powdered peanut butter</b> whisked with some hot liquid. Regular PB (1⅛ cups) instead adds about 100 kcal per portion.</p>`,
+    frz:"Light coconut milk can separate after thawing; stir halfway through reheating."},
+  cilime:{title:"Cilantro-lime", body:`<p>Instant Pot's official recipe: 2 lb chicken, 3 cups fresh salsa, taco seasoning, lime and black beans; 12 min High + 10 NR (${L("https://instantpot.com/blogs/recipes/cilantro-lime-chicken","Instant Pot")}). Leave the beans out and pick black beans as your carb in the switcher instead.</p>
+<p><b>5 lb batch:</b> 1½ cups broth on the bottom, chicken, then two 16 oz jars salsa, 3 tbsp taco seasoning and ½ cup lime juice on top.</p>
+<p><b>IP:</b> 12 min High, 10 min NR. Shred, reduce on Sauté 5 min, then stir in 1 cup chopped cilantro.</p>`,
+    frz:"Freezes very well. Add fresh cilantro and lime after reheating; frozen cilantro loses its flavor."}
+};
+const CARD_ORDER = [["buffalo",["buffalo"]],["greek",["greek"]],["bbq",["bbqns","bbqreg"]],["cilime",["cilime"]],["verde",["verde"]],["tinga",["tinga"]],["gochu",["gochu"]],["honey",["honey"]],["hothoney",["hothoney"]],["butter",["butter"]],["peanut",["peanut"]]];
+
+const TR = {
+  tplain:{body:`<p>Salt, pepper and a splash of broth. Brown in large crumbles on medium-high, 2 to 3 batches.</p>`, frz:"Dries out the most; add 2 tbsp broth per container."},
+  ttaco:{body:`<p>MasonFit's 1 lb version browns 97/3 turkey with onion, garlic, chipotles, lime, 1 tbsp honey and broth, then 6 min High with a quick release (${L("https://masonfit.com/instant-pot-ground-turkey-taco-meat/","MasonFit")}).</p><p><b>5 lb batch:</b> 1 tbsp oil, 2 onions (grated), 10 garlic cloves, ½ cup chipotles, ½ cup lime juice, 2 tbsp honey, 1½ cups broth, cumin, coriander, salt. Brown the turkey on Sauté in 2 to 3 batches, <b>deglaze thoroughly</b> (99% turkey leaves almost no fat), put everything back, 6 min High, quick release.</p>`, frz:"Freezes very well. The seasoning works on chicken too."},
+  tital:{body:`<p><b>5 lb batch:</b> 1 tbsp oil, 1 onion and 6 garlic cloves sautéed, 1 cup broth on the bottom, browned turkey, then two 28 oz cans crushed tomatoes and 2 tbsp Italian seasoning on top, 5 to 6 min High. Timing is by analogy with the taco recipe; no tested source.</p>`, frz:"Freezes very well."},
+  tmeat:{body:`<p><b>Oven, per 5 lb:</b> 3 eggs, ¾ cup panko, a grated onion and garlic, about 96 to 100 small balls on 2 to 3 sheet pans, <b>400°F for 20 to 25 min to 165°F</b> (${L("https://wildgameandfish.com/wprm_print/baked-turkey-meatballs","Wild Game & Fish")}). Sous vide: 150°F for 1 to 4 h in a single layer, pre-frozen 30 to 60 min so they hold shape under vacuum (${L("https://aducksoven.com/wprm_print/sous-vide-meatballs-beef-turkey-or-chicken","A Duck's Oven")}).</p>`, frz:"Freeze on a sheet pan for an hour before packing so they don't fuse."}
+};
+
+const APPENDIX = [["Honey, 1 tbsp","64"],["Olive / sesame oil, 1 tbsp","119–120"],["Onion, medium","44"],["Garlic clove","4"],["Crushed tomatoes, 1 cup","77"],["Diced tomatoes, 14.5 oz can","82"],["Crushed tomatoes, 28 oz can","254"],["Chipotles in adobo, 1 tbsp","10"],["Broth, 1 cup","10"],["Frank's RedHot","0"],["Ranch seasoning, 1 tbsp","30"],["Worcestershire, 1 tbsp","13"],["BBQ sauce, regular, 1 cup","480"],["BBQ sauce, no sugar added, 1 cup","80"],["Salsa verde, 16 oz jar","150"],["Soy sauce, 1 tbsp","9"],["Ketchup, 1 tbsp","17"],["Cornstarch, 1 tbsp","30"],["Gochujang, 1 tbsp","40"],["Seasoned rice vinegar, 1 tbsp","20"],["Nonfat Greek yogurt, 1 cup","134"],["Butter, 1 tbsp","102"],["Powdered PB, 2 tbsp","60"],["Light coconut milk, 1 cup","150"],["Coconut aminos, 1 tbsp","15"],["Egg, large","72"],["Panko, 1 cup","220"],["Lemon / lime juice, 1 tbsp","3–4"],["Jarred salsa, 16 oz","160"],["Taco seasoning, 1 tbsp","20"],["Dried spices, 1 tsp","~6"],["Chili-garlic paste, 1 tbsp","10"],["Raw chicken breast, 5 lb","2,722 (510 g P, 60 g F)"],["Raw 99% turkey, 5 lb","2,540 (537 g P, 44 g F)"]];
+
+/* ---------- state ---------- */
+const $ = id=>document.getElementById(id);
+const byId = (arr,id)=>arr.find(x=>x.id===id);
+const DEF = {target:"today", chicken:"plain6", turkey:"t4", dCarb:"myrice", tCarb:"none", dVeg:"none", tVeg:"broc", rc:"50", off:[]};
+let S = {...DEF};
+try{ const s = JSON.parse(localStorage.getItem("mealSwitcher3")||"null"); if(s) S = {...DEF, ...s}; }catch(e){}
+const save = ()=>{ try{ localStorage.setItem("mealSwitcher3", JSON.stringify(S)); }catch(e){} };
+
+const fmt = (n,d=0)=>Number(n).toLocaleString("en-US",{maximumFractionDigits:d,minimumFractionDigits:d});
+const frac = x=>{ // nice cups text
+  const w = Math.floor(x), r = x - w; const opts=[[0,""],[.25,"¼"],[.33,"⅓"],[.5,"½"],[.67,"⅔"],[.75,"¾"],[1,""]];
+  let best = opts.reduce((a,b)=>Math.abs(b[0]-r)<Math.abs(a[0]-r)?b:a);
+  const whole = best[0]===1 ? w+1 : w;
+  return (whole? whole : (best[1]?"":"0")) + best[1];
+};
+
+function rcItem(){
+  const v = +S.rc; if(!v) return null;
+  return v===35 ? {k:70,p:1.4,c:14,f:0,fb:0,amt:"2 (35 kcal each)"} : {k:100,p:1,c:20,f:0,fb:0,amt:"2 (50 kcal each)"};
+}
+function vegPortion(id){ const v=byId(VEG,id); if(!v||v.id==="none") return null; const m=v.g/100; return {name:v.name, amt:`${v.g} g`, k:v.k*m,p:v.p*m,c:v.c*m,f:v.f*m,fb:v.fb*m}; }
+function carbPortion(id,kcal){ const c=byId(CARBS,id); if(!c||c.id==="none") return null; const g=Math.max(0,kcal)/(c.k/100); const m=g/100; return {c, g, k:c.k*m, P:c.p*m, C:c.c*m, F:c.f*m, fb:c.fb*m}; }
+function unitText(cp){ const u=cp.g/cp.c.unit; return `${cp.c.dry?"dry, ":""}≈ ${frac(u)} ${cp.c.uname}${u>1.1&&!cp.c.uname.endsWith("s")?"s":""}${cp.c.dry?` (${frac(u)} cup${u>1.1?"s":""} cooked)`:""}`; }
+
+/* everything except carbs */
+function fixedRows(st){
+  const rows=[];
+  for(const grp of FIXED) for(const it of grp.items){
+    if(st.off.includes(it.id)) continue;
+    if(it.id==="rc"){ const r=rcItem(); if(r) rows.push({meal:grp.meal,name:it.name,amt:r.amt,...r}); continue; }
+    rows.push({meal:grp.meal,name:it.name,amt:it.amt,k:it.k,p:it.p,c:it.c,f:it.f,fb:it.fb});
+  }
+  return rows;
+}
+function compute(st){
+  const rows = fixedRows(st);
+  const ch = byId(CHICKEN,st.chicken), tk = byId(TURKEY,st.turkey);
+  rows.push({meal:"Turkey meal",name:tk.name,amt:"1 portion",k:tk.k,p:tk.p,c:tk.c,f:tk.f,fb:0});
+  const tv = vegPortion(st.tVeg); if(tv) rows.push({meal:"Turkey meal",name:tv.name,amt:tv.amt,k:tv.k,p:tv.p,c:tv.c,f:tv.f,fb:tv.fb});
+  rows.push({meal:"Dinner",name:ch.name,amt:"1 portion",k:ch.k,p:ch.p,c:ch.c,f:ch.f,fb:0});
+  const dv = vegPortion(st.dVeg); if(dv) rows.push({meal:"Dinner",name:dv.name,amt:dv.amt,k:dv.k,p:dv.p,c:dv.c,f:dv.f,fb:dv.fb});
+  const sum = rows.reduce((a,r)=>({k:a.k+r.k,p:a.p+r.p,c:a.c+r.c,f:a.f+r.f,fb:a.fb+r.fb}),{k:0,p:0,c:0,f:0,fb:0});
+  return {rows, base:sum.k, sum};
+}
+/* your current day: plain 6 oz chicken + 2 servings of your rice (92 g dry), 4 oz turkey + 1 cup broccoli, 1 tbsp olive oil, current fixed settings */
+function todayMacros(){
+  const st = {...S, chicken:"plain6", turkey:"t4", dVeg:"none", tVeg:"broc"};
+  const s = compute(st).sum, rice = byId(CARBS,"myrice"), g = 92;
+  return {k:s.k + g*rice.k/100 + OIL.tbsp*OIL.k, p:s.p + g*rice.p/100, c:s.c + g*rice.c/100, f:s.f + g*rice.f/100 + OIL.tbsp, fb:s.fb + g*rice.fb/100};
+}
+function targetFor(st){
+  if(st.target==="today"){ const t=todayMacros(); return {label:"Your current day", k:Math.round(t.k), p:Math.round(t.p), c:Math.round(t.c), f:Math.round(t.f), fb:32}; }
+  return TARGETS[st.target];
+}
+/* Oil holds fat at target; carbs then fill the remaining calories. Two passes so the carbs' own fat is counted. */
+function solve(st){
+  const {rows, base, sum} = compute(st);
+  const T = targetFor(st);
+  const two = st.tCarb!=="none" && st.dCarb!=="none";
+  let carbFat = 0, dc=null, tc=null, oilG=0, flex=0;
+  for(let pass=0; pass<2; pass++){
+    oilG = Math.max(0, T.f - sum.f - carbFat);
+    flex = T.k - base - oilG*OIL.k;
+    const dK = st.dCarb==="none" ? 0 : (two? flex/2 : flex);
+    const tK = st.tCarb==="none" ? 0 : (st.dCarb==="none"? flex : flex/2);
+    dc = carbPortion(st.dCarb, dK); tc = carbPortion(st.tCarb, tK);
+    carbFat = (dc?dc.F:0) + (tc?tc.F:0);
+  }
+  return {rows, base, sum, T, flex, dc, tc, oilG};
+}
+const oilText = g => g<0.5 ? "none" : g>=13 ? `${fmt(g/OIL.tbsp,1)} tbsp (${fmt(g)} g)` : `${fmt(g/4.5,1)} tsp (${fmt(g)} g)`;
+
+/* ---------- render ---------- */
+function opts(sel, arr, label=x=>x.name){ sel.innerHTML = arr.map(x=>`<option value="${x.id}">${label(x)}</option>`).join(""); }
+function initControls(){
+  opts($("chicken"), CHICKEN, x=>`${x.name} · ${x.k} kcal`);
+  opts($("turkey"), TURKEY, x=>`${x.name} · ${x.k} kcal`);
+  opts($("dCarb"), CARBS.filter(c=>c.id!=="none"));
+  opts($("tCarb"), CARBS);
+  opts($("dVeg"), VEG); opts($("tVeg"), VEG);
+  $("fixedChecks").innerHTML = FIXED.flatMap(g=>g.items).filter(i=>i.id!=="rc").map(i=>
+    `<label for="fx-${i.id}"><input type="checkbox" id="fx-${i.id}" data-fx="${i.id}"> ${i.name} <span class="hint">${i.amt}</span></label>`).join("");
+  for(const id of ["chicken","turkey","dCarb","tCarb","dVeg","tVeg","rc"]) $(id).addEventListener("change", e=>{ S[id]=e.target.value; update(); });
+  $("fixedChecks").addEventListener("change", e=>{ const id=e.target.dataset.fx; if(!id) return; S.off = e.target.checked ? S.off.filter(x=>x!==id) : [...S.off,id]; update(); });
+  $("targetSeg").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return; S.target=b.dataset.t; update(); });
+  $("copyBtn").addEventListener("click", copyDay);
+}
+function syncControls(){
+  for(const id of ["chicken","turkey","dCarb","tCarb","dVeg","tVeg","rc"]) $(id).value = S[id];
+  document.querySelectorAll("[data-fx]").forEach(c=>c.checked=!S.off.includes(c.dataset.fx));
+  document.querySelectorAll("#targetSeg button").forEach(b=>b.setAttribute("aria-pressed", b.dataset.t===S.target));
+}
+
+function update(){
+  save(); syncControls();
+  const r = solve(S), T = r.T;
+  const td = todayMacros(), tk = Math.round(td.k);
+  $("targetHint").textContent = S.target==="today"
+    ? `Holds every combination at your current day: ${fmt(tk)} kcal, ${fmt(td.f)} g fat, ${fmt(td.c)} g carbs, with protein at ${fmt(td.p)} g or more.`
+    : `Your current day is ${fmt(tk)} kcal and ${fmt(td.f)} g fat with these values. This target sets fat to ${T.f} g through the oil and fills the rest with carbs.`;
+
+  // carb output
+  const carbBox = (cp, meal)=> cp ? `<div class="carb"><span class="eyebrow">${meal} carb</span><div class="big num">${fmt(cp.g)} g${cp.c.dry?" dry":""}</div><div class="what">${cp.c.name}</div><div class="sub">${unitText(cp)} · ${fmt(cp.k)} kcal · ${fmt(cp.C)} g carbs</div></div>` : "";
+  const oilBox = `<div class="carb"><span class="eyebrow">Dinner olive oil</span><div class="big num">${r.oilG<0.5?"0":fmt(r.oilG)} g</div><div class="what">Extra-virgin olive oil</div><div class="sub">${r.oilG<0.5?"none today":oilText(r.oilG).replace(/ \(.*\)/,"")} · ${fmt(r.oilG*OIL.k)} kcal · your usual is 1 tbsp</div></div>`;
+  $("carbOut").innerHTML = carbBox(r.dc,"Dinner") + carbBox(r.tc,"Turkey meal") + oilBox;
+
+  // totals
+  const all = [...r.rows];
+  if(r.oilG>=0.5) all.push({meal:"Dinner", name:"Olive oil", amt:oilText(r.oilG), k:r.oilG*OIL.k,p:0,c:0,f:r.oilG,fb:0, flex:true});
+  if(r.tc) all.push({meal:"Turkey meal", name:r.tc.c.name, amt:`${fmt(r.tc.g)} g`, k:r.tc.k,p:r.tc.P,c:r.tc.C,f:r.tc.F,fb:r.tc.fb, flex:true});
+  if(r.dc) all.push({meal:"Dinner", name:r.dc.c.name, amt:`${fmt(r.dc.g)} g${r.dc.c.dry?" dry":""}`, k:r.dc.k,p:r.dc.P,c:r.dc.C,f:r.dc.F,fb:r.dc.fb, flex:true});
+  const tot = all.reduce((a,x)=>({k:a.k+x.k,p:a.p+x.p,c:a.c+x.c,f:a.f+x.f,fb:a.fb+x.fb}),{k:0,p:0,c:0,f:0,fb:0});
+  $("tagEyebrow").textContent = `${T.label} · target ${fmt(T.k)} kcal`;
+  $("dayKcal").textContent = `${fmt(tot.k)} kcal`;
+  const onT = Math.abs(tot.k - T.k) < 15;
+  $("dayPill").innerHTML = onT ? `<span class="pill ok">on target</span>` : `<span class="pill no">${tot.k>T.k?"+":""}${fmt(tot.k-T.k)} vs target</span>`;
+
+  // alerts
+  const al=[];
+  if(r.oilG<0.5 && r.sum.f > T.f+2) al.push(`<div class="alert">This combination has ${fmt(r.sum.f - T.f)} g more fat than the target even with no oil. Calories still balance through the carbs.</div>`);
+  if(r.flex < 0) al.push(`<div class="alert bad">Even with no carb this combination is ${fmt(-r.flex)} kcal over the target. Pick a leaner chicken or turkey option, or switch off a fixed food.</div>`);
+  const big = [r.dc,r.tc].filter(Boolean).some(c=>c.k>520);
+  if(big && S.tCarb==="none") al.push(`<div class="alert">That's a big plate of ${byId(CARBS,S.dCarb).name.toLowerCase()}. Add a carb to the turkey meal to split it across two meals.</div>`);
+  if(r.flex>=0 && r.flex<120 && r.dc) al.push(`<div class="alert">Only ${fmt(r.flex)} kcal is left for carbs. On training days a leaner style with more carbs will probably serve you better.</div>`);
+  $("alerts").innerHTML = al.join("");
+
+  // macros
+  const m = [["Protein",tot.p,T.p,"g","min"],["Carbs",tot.c,T.c,"g"],["Fat",tot.f,T.f,"g"],["Fiber",tot.fb,T.fb,"g","min"]];
+  $("macros").innerHTML = m.map(([n,v,t,u,kind])=>{
+    const pct = Math.min(100, v/t*100); const over = !kind && v>t*1.1;
+    return `<div class="mrow"><span>${n}</span><div class="bar ${over?"over":""}"><i style="width:${pct}%"></i></div><span class="v num">${fmt(v)} / ${fmt(t)} ${u}</span></div>`;
+  }).join("") + `<p class="hint">Protein and fiber targets are minimums. Sauce fiber isn't counted.</p>`;
+
+  // day table
+  const order = ["Breakfast","Turkey meal","Protein snack","Snack","Dinner"];
+  let h = `<thead><tr><th>Food</th><th>Amount</th><th class="n">kcal</th><th class="n">P</th><th class="n">C</th><th class="n">F</th></tr></thead><tbody>`;
+  for(const meal of order){
+    const rs = all.filter(x=>x.meal===meal); if(!rs.length) continue;
+    h += `<tr class="meal"><td colspan="6">${meal}</td></tr>`;
+    for(const x of rs) h += `<tr class="${x.flex?"flex":""}"><td>${x.name}</td><td>${x.amt}</td><td class="n">${fmt(x.k)}</td><td class="n">${fmt(x.p,1)}</td><td class="n">${fmt(x.c,1)}</td><td class="n">${fmt(x.f,1)}</td></tr>`;
+  }
+  h += `<tr class="tot"><td>Day</td><td></td><td class="n">${fmt(tot.k)}</td><td class="n">${fmt(tot.p)}</td><td class="n">${fmt(tot.c)}</td><td class="n">${fmt(tot.f)}</td></tr></tbody>`;
+  $("dayTable").innerHTML = h;
+  window._day = {all, tot, T};
+
+  renderCards(); renderOffsets();
+}
+
+function copyDay(){
+  const {all,tot,T} = window._day;
+  const lines = [`${T.label} (${fmt(T.k)} kcal)`];
+  for(const meal of ["Breakfast","Turkey meal","Protein snack","Snack","Dinner"]){
+    const rs = all.filter(x=>x.meal===meal); if(!rs.length) continue;
+    lines.push(`${meal}: ` + rs.map(x=>`${x.name} ${x.amt}`).join(", "));
+  }
+  lines.push(`Total: ${fmt(tot.k)} kcal, ${fmt(tot.p)} P / ${fmt(tot.c)} C / ${fmt(tot.f)} F / ${fmt(tot.fb)} fiber`);
+  const txt = lines.join("\n"), btn=$("copyBtn");
+  const done = ok=>{ btn.textContent = ok?"Copied":"Select the table to copy"; setTimeout(()=>btn.textContent="Copy the day as text",1800); };
+  try{ navigator.clipboard.writeText(txt).then(()=>done(true),()=>done(false)); }catch(e){ done(false); }
+}
+
+function renderCards(){
+  const plain = 281;
+  $("chickenCards").innerHTML = CARD_ORDER.map(([rid,ids])=>{
+    const rec = R[rid]; const vs = ids.map(id=>byId(CHICKEN,id));
+    const sel = ids.includes(S.chicken);
+    const macs = vs.map(v=>`<div><span class="mac">${vs.length>1?v.name.replace("BBQ, ","")+": ":""}${v.k} kcal · ${v.p} P · ${v.c} C · ${v.f} F</span> <span class="delta">+${v.k-plain} kcal vs plain</span></div>`).join("");
+    const btns = vs.map(v=>`<button type="button" class="use" data-chicken="${v.id}">${S.chicken===v.id?"In use":"Use"+(vs.length>1?" "+v.name.replace("BBQ, ",""):" for dinner")}</button>`).join("");
+    return `<article class="card ${sel?"sel":""}"><div class="top"><h3>${rec.title}</h3><span class="eyebrow">10 portions</span></div>${macs}${rec.body}<div class="frz"><b>Freezer:</b> ${rec.frz}</div><div class="btns">${btns}</div></article>`;
+  }).join("");
+  $("turkeyCards").innerHTML = TURKEY.filter(t=>t.id!=="t4").map(t=>{
+    const rec = TR[t.id]; const sel = S.turkey===t.id;
+    return `<article class="card ${sel?"sel":""}"><div class="top"><h3>${t.name.replace(" portion (1 of 16)","")}</h3><span class="eyebrow">16 portions</span></div><div><span class="mac">${t.k} kcal · ${t.p} P · ${t.c} C · ${t.f} F</span> <span class="delta">+${t.k-157} kcal vs your 4 oz</span></div>${rec.body}<div class="frz"><b>Freezer:</b> ${rec.frz}</div><div class="btns"><button type="button" class="use" data-turkey="${t.id}">${sel?"In use":"Use for turkey meal"}</button></div></article>`;
+  }).join("");
+}
+document.addEventListener("click", e=>{
+  const b = e.target.closest("[data-chicken],[data-turkey]"); if(!b) return;
+  if(b.dataset.chicken) S.chicken=b.dataset.chicken; else S.turkey=b.dataset.turkey;
+  update(); document.getElementById("controls").scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth", block:"start"});
+});
+
+function renderOffsets(){
+  const T = targetFor(S);
+  $("offsetIntro").innerHTML = `Your rice at dinner (grams dry; 46 g is one serving, about 1 cup cooked), then olive oil, that keep the day at <b>${fmt(T.k)} kcal and ${T.f} g fat</b> (${T.label.toLowerCase()}). Assumes rice only at dinner, broccoli only with the turkey, and your current fixed foods. 1 tsp of oil is 4.5 g. It follows the target and fixed-food settings above.`;
+  const chs = CHICKEN.filter(c=>c.id!=="plainb");
+  let h = `<thead><tr><th>Dinner style ↓ / Turkey →</th>${TURKEY.map(t=>`<th class="n">${t.name.replace(" (weighed)","").replace("Plain 99%, ","").replace(" portion (1 of 16)","").replace("Chipotle ","").replace(" in crushed tomato","").replace(" (egg + panko)","")}</th>`).join("")}</tr></thead><tbody>`;
+  for(const c of chs){
+    h += `<tr><td>${c.name}</td>` + TURKEY.map(t=>{
+      const s = solve({...S, chicken:c.id, turkey:t.id, dCarb:"myrice", tCarb:"none", dVeg:"none", tVeg:"broc"});
+      return `<td class="n">${s.flex<0?"—":fmt(s.dc.g)+" g"}<br><span class="hint">${fmt(s.oilG/4.5,1)} tsp oil</span></td>`;
+    }).join("") + `</tr>`;
+  }
+  $("offsetTable").innerHTML = h + "</tbody>";
+}
+
+function staticTables(){
+  $("carbTable").innerHTML = `<thead><tr><th>Carb (cooked unless noted)</th><th class="n">kcal/g</th><th class="n">per 100 g C / P / F / fiber</th><th>Household unit</th><th>Source</th></tr></thead><tbody>` +
+    CARBS.filter(c=>c.id!=="none").map(c=>`<tr><td>${c.name}</td><td class="n">${(c.k/100).toFixed(2)}${c.dry?" dry":""}</td><td class="n">${c.c} / ${c.p} / ${c.f} / ${c.fb}</td><td>1 ${c.uname} ≈ ${c.unit} g${c.dry?" dry":""}</td><td>${c.id==="myrice"?"Your bag's label (46 g dry = 170 kcal, 38 C, 4 P, 0 F)":L(c.fdc[1], c.fdc[0]==="label"?"Hannaford label":"FDC "+c.fdc[0])}</td></tr>`).join("") + "</tbody>";
+  $("vegTable").innerHTML = `<thead><tr><th>Vegetable (cooked)</th><th class="n">kcal/100 g</th><th class="n">Grams for ~55 kcal</th><th>Note</th><th>Source</th></tr></thead><tbody>` +
+    VEG.filter(v=>v.id!=="none").map(v=>`<tr><td>${v.name}</td><td class="n">${v.k}</td><td class="n">${v.g}</td><td>${v.note}</td><td>${L(v.fdc[1],"FDC "+v.fdc[0])}</td></tr>`).join("") + "</tbody>";
+  $("fixedTable").innerHTML = `<thead><tr><th>Fixed food</th><th>Amount</th><th class="n">kcal</th><th class="n">P</th><th class="n">C</th><th class="n">F</th><th class="n">Fiber</th><th>Source</th></tr></thead><tbody>` +
+    FIXED.flatMap(g=>g.items).map(i=>`<tr><td>${i.name}</td><td>${i.amt}</td><td class="n">${i.k}</td><td class="n">${i.p}</td><td class="n">${i.c}</td><td class="n">${i.f}</td><td class="n">${i.fb}</td><td>${i.src}</td></tr>`).join("") +
+    `<tr><td>Olive oil (adjusts)</td><td>1 tbsp (13.5 g) usual</td><td class="n">119</td><td class="n">0</td><td class="n">0</td><td class="n">13.5</td><td class="n">0</td><td>USDA standard value</td></tr>` +
+    `<tr><td>99% turkey, cooked</td><td>4 oz (113 g)</td><td class="n">157</td><td class="n">32.9</td><td class="n">0</td><td class="n">2.7</td><td class="n">0</td><td>${L("https://getfoodfacts.com/food/turkey-ground-fat-free-raw-172847","FDC 172847")}, ~81% cooked yield</td></tr>` +
+    `<tr><td>Chicken breast, roasted</td><td>6 oz (170 g)</td><td class="n">281</td><td class="n">52.7</td><td class="n">0</td><td class="n">6.1</td><td class="n">0</td><td>${L("https://getfoodfacts.com/food/chicken-broilers-or-fryers-breast-meat-only-cooked-roasted-171477","FDC 171477")}</td></tr></tbody>`;
+  const half = Math.ceil(APPENDIX.length/2);
+  let a = `<thead><tr><th>Ingredient</th><th class="n">kcal</th><th>Ingredient</th><th class="n">kcal</th></tr></thead><tbody>`;
+  for(let i=0;i<half;i++){ const x=APPENDIX[i], y=APPENDIX[i+half]; a += `<tr><td>${x[0]}</td><td class="n">${x[1]}</td><td>${y?y[0]:""}</td><td class="n">${y?y[1]:""}</td></tr>`; }
+  $("appendix").innerHTML = a + "</tbody>";
+}
+
+initControls(); staticTables(); update();
+</script>
+
+</body>
+</html>
