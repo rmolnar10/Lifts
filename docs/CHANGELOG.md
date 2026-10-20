@@ -18,6 +18,20 @@
 - Backups (version 6) carry readiness, form and bodyweight.
 
 ## Post-V5 fixes
+- Morning hip work split by what each part needs (2026-10-20):
+  - Daily Hips (Mobility), about 12 min every morning: 90/90 Scissor, Cossack
+    Shift, Half-Kneeling Hip, Pigeon Push-Up, Bear to Down Dog, then 360°
+    breathing and reverse Kegels.
+  - Hip & Core Strength, about 15 min three mornings a week: Single-Leg Bridge,
+    Side Plank + Hip Raise, Pigeon Raise, Monster Steps, Dead Bug. A new
+    "control" type tells you to make a move harder (band, tempo, pause) once
+    every set reaches the top of its range, instead of never progressing it.
+  - Side Lunge, Bridge + Knee Lift, Supine 90°, Foam-Roller Step-Over and
+    Step-Through Lunge dropped; the Lower day covers their work.
+  - Hip abduction and adduction machines removed from the Lower day: the gym has
+    neither the machines nor ankle straps. Abduction is covered at home by Monster
+    Steps and the side plank hip raise; adduction by a new Copenhagen Plank
+    (top knee on a couch or bench), 2x15-30 s per side, in Hip & Core Strength.
 - Program changes now reach existing accounts (2026-10-19). The built-in program
   was seeded once and never updated, so the Lower day, the daily hip routines and
   the Intervals day only ever reached new accounts. The app now re-imports the

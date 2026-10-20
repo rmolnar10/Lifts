@@ -107,9 +107,9 @@ describe("coaching: diagnosing a stall", () => {
   });
 
   it("does not try to load-progress a timed or practice movement", () => {
-    const hold = find("Daily Hips A (Mobility)", "hkhip");
-    const history = [workout("Daily Hips A (Mobility)", "hkhip", { reps: [30, 30], weight: 0 })];
-    expect(coachExercise(hold, "Daily Hips A (Mobility)", history).status).toBe("untracked");
+    const hold = find("Daily Hips (Mobility)", "hkhip");
+    const history = [workout("Daily Hips (Mobility)", "hkhip", { reps: [30, 30], weight: 0 })];
+    expect(coachExercise(hold, "Daily Hips (Mobility)", history).status).toBe("untracked");
   });
 });
 
@@ -198,9 +198,9 @@ describe("deload reminder", () => {
     const program = activeProgramFromBuiltin();
     const strength = sessions(DELOAD_EVERY_N_WORKOUTS - 1);
     const support = [
-      workout("Daily Hips A (Mobility)", "cossack", { reps: [8, 8] }),
+      workout("Daily Hips (Mobility)", "cossack", { reps: [8, 8] }),
       workout("Cardio", "zone2", { reps: [35] }),
-      workout("Daily Hips B (Strength)", "breath360", { reps: [180] }),
+      workout("Hip & Core Strength", "monster", { reps: [12, 12] }),
       workout("Intervals", "intervals", { reps: [24] }),
     ];
     // Four extra sessions, none of which should move the counter.

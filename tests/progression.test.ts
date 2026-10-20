@@ -7,8 +7,8 @@ import { exerciseById, repsFromTarget, workout } from "./helpers";
 const HEAVY = "Heavy Upper";
 const VOLUME = "Volume Upper";
 const LOWER = "Lower";
-const HIPS_A = "Daily Hips A (Mobility)";
-const HIPS_B = "Daily Hips B (Strength)";
+const HIPS_A = "Daily Hips (Mobility)";
+const HIPS_B = "Hip & Core Strength";
 const INTERVALS = "Intervals";
 const CARDIO = "Cardio";
 
@@ -199,6 +199,16 @@ describe("non-load exercise types", () => {
     expect(s.focus).toBe("Quality only; do not strain.");
   });
 
+  it("pushes control work to a harder variation once every set tops out", () => {
+    const bridge = exerciseById(PROGRAM[HIPS_B], "slbridge");
+    const building = [workout(HIPS_B, "slbridge", { reps: [12, 10] })];
+    expect(suggest(bridge, HIPS_B, building, {}).target).toBe("Build toward 12 clean reps");
+    expect(suggest(bridge, HIPS_B, building, {}).focus).toBe("Prioritize Set 2; slow and controlled.");
+
+    const maxed = [workout(HIPS_B, "slbridge", { reps: [12, 12] })];
+    expect(suggest(bridge, HIPS_B, maxed, {}).target).toBe("Make it harder, then build back from 8");
+  });
+
   it("progresses a timed hold on time and then on difficulty", () => {
     const hold = exerciseById(PROGRAM[HIPS_A], "hkhip");
     const building = [workout(HIPS_A, "hkhip", { reps: [40, 35], unit: "sec" })];
@@ -249,7 +259,7 @@ describe("program integrity", () => {
     ]);
     expect(PROGRAM[HEAVY]).toHaveLength(7);
     expect(PROGRAM[VOLUME]).toHaveLength(8);
-    expect(PROGRAM[LOWER]).toHaveLength(6);
+    expect(PROGRAM[LOWER]).toHaveLength(4);
   });
 
   it("keeps the lower day off failure and free of dropsets", () => {
