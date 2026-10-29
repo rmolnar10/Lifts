@@ -20,10 +20,11 @@ import HistoryView from "@/components/views/HistoryView";
 import ProgressView from "@/components/views/ProgressView";
 import PRsView from "@/components/views/PRsView";
 import SettingsView from "@/components/views/SettingsView";
+import MealsView from "@/components/views/MealsView";
 import RestTimer from "@/components/RestTimer";
 import LegacyImportBanner from "@/components/LegacyImportBanner";
 
-export const VIEWS = ["Dashboard", "Workout", "History", "Progress", "PRs", "Settings"] as const;
+export const VIEWS = ["Dashboard", "Workout", "Meals", "History", "Progress", "PRs", "Settings"] as const;
 export type ViewName = (typeof VIEWS)[number];
 
 export default function AppShell({ userEmail }: { userEmail: string }) {
@@ -253,6 +254,8 @@ export default function AppShell({ userEmail }: { userEmail: string }) {
                 }}
               />
             ) : null}
+
+            {view === "Meals" ? <MealsView setError={setError} /> : null}
 
             {view === "History" ? (
               <HistoryView {...shared} onEdit={(d, id) => goToWorkout(d, id)} />
