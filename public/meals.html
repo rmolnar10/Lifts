@@ -127,8 +127,8 @@ ol.steps{margin:0;padding-left:20px;display:grid;gap:6px;max-width:72ch}
     <fieldset>
       <legend>Daily target</legend>
       <div class="seg" id="targetSeg" role="group" aria-label="Daily target">
-        <button type="button" data-t="today">My current day</button>
-        <button type="button" data-t="p1">Phase 1 · 2,300</button>
+        <button type="button" data-t="p1">Phase 1 · 2,100 weekdays</button>
+        <button type="button" data-t="today">Old day · 2,300</button>
         <button type="button" data-t="p2">Phase 2 · 2,900</button>
       </div>
       <p class="hint" id="targetHint"></p>
@@ -273,7 +273,7 @@ ol.steps{margin:0;padding-left:20px;display:grid;gap:6px;max-width:72ch}
   <h2>Where the numbers come from</h2>
   <div class="prose">
     <p>Your fixed foods and the plain meats use the values from your original doc (USDA FoodData Central SR Legacy records read through a mirror site). The peanut butter and olive oil added in the cut plan use standard USDA values for natural smooth peanut butter (about 597 kcal/100 g) and olive oil (119 kcal/tbsp), not re-fetched. Sauce macros are calculations from ingredient lists using standard label values (appendix below); treat them as ±10% and check them against the labels you buy.</p>
-    <p>Daily targets come from your <a href="https://claude.ai/code/artifact/d8f3e9cd-86e2-492f-a0f0-7c0fee166dce" target="_blank" rel="noopener">Lean Gain Nutrition Plan</a>: Phase 1 is 2,300 kcal (160 P / 65 F / 270 C), Phase 2 is 2,900 kcal (160 P / 80 F / 385 C).</p>
+    <p>Daily targets come from your <a href="https://claude.ai/code/artifact/d8f3e9cd-86e2-492f-a0f0-7c0fee166dce" target="_blank" rel="noopener">Lean Gain Nutrition Plan</a>: Phase 1 averages 2,300 kcal a day as 2,100 Monday to Friday (160 P / 54 F) and up to 2,800 on Saturday and Sunday, drinks included. Phase 2 is 2,900 kcal (160 P / 80 F / 385 C).</p>
   </div>
   <div class="tbl"><table id="fixedTable"></table></div>
   <h3>Appendix: sauce ingredient values</h3>
@@ -367,7 +367,8 @@ const VEG = [
 ];
 
 const TARGETS = {
-  p1:{label:"Phase 1 cut", k:2300, p:160, f:65, c:270, fb:32},
+  /* Mon to Fri. Sat and Sun eat the same meals, with drinks and extras up to the weekend ceiling (same ~16,100 kcal week). */
+  p1:{label:"Phase 1 weekday", k:2100, p:160, f:54, c:208, fb:30, weekend:{label:"Phase 1 weekend", k:2800, p:160}},
   p2:{label:"Phase 2 lean gain", k:2900, p:160, f:80, c:385, fb:40}
 };
 
@@ -432,10 +433,15 @@ const APPENDIX = [["Honey, 1 tbsp","64"],["Olive / sesame oil, 1 tbsp","119–12
 /* ---------- state ---------- */
 const $ = id=>document.getElementById(id);
 const byId = (arr,id)=>arr.find(x=>x.id===id);
-const DEF = {target:"today", chicken:"plain6", turkey:"t4", dCarb:"myrice", tCarb:"none", dVeg:"none", tVeg:"broc", rc:"50", off:[]};
+const DEF = {target:"p1", chicken:"plain6", turkey:"t4", dCarb:"myrice", tCarb:"none", dVeg:"none", tVeg:"broc", rc:"50", off:[]};
 let S = {...DEF};
-try{ const s = JSON.parse(localStorage.getItem("mealSwitcher3")||"null"); if(s) S = {...DEF, ...s}; }catch(e){}
-const save = ()=>{ try{ localStorage.setItem("mealSwitcher3", JSON.stringify(S)); }catch(e){} };
+try{
+  const s = JSON.parse(localStorage.getItem("mealSwitcher4")||"null");
+  // Picks saved before the weekday/weekend split keep their meals but move to the new Phase 1 target.
+  const old = s ? null : JSON.parse(localStorage.getItem("mealSwitcher3")||"null");
+  if(s) S = {...DEF, ...s}; else if(old) S = {...DEF, ...old, target:"p1"};
+}catch(e){}
+const save = ()=>{ try{ localStorage.setItem("mealSwitcher4", JSON.stringify(S)); }catch(e){} };
 
 const fmt = (n,d=0)=>Number(n).toLocaleString("en-US",{maximumFractionDigits:d,minimumFractionDigits:d});
 const frac = x=>{ // nice cups text
@@ -480,7 +486,7 @@ function todayMacros(){
   return {k:s.k + g*rice.k/100 + OIL.tbsp*OIL.k, p:s.p + g*rice.p/100, c:s.c + g*rice.c/100, f:s.f + g*rice.f/100 + OIL.tbsp, fb:s.fb + g*rice.fb/100};
 }
 function targetFor(st){
-  if(st.target==="today"){ const t=todayMacros(); return {label:"Your current day", k:Math.round(t.k), p:Math.round(t.p), c:Math.round(t.c), f:Math.round(t.f), fb:32}; }
+  if(st.target==="today"){ const t=todayMacros(); return {label:"Old day", k:Math.round(t.k), p:Math.round(t.p), c:Math.round(t.c), f:Math.round(t.f), fb:32}; }
   return TARGETS[st.target];
 }
 /* Oil holds fat at target; carbs then fill the remaining calories. Two passes so the carbs' own fat is counted. */
@@ -527,13 +533,17 @@ function update(){
   const r = solve(S), T = r.T;
   const td = todayMacros(), tk = Math.round(td.k);
   $("targetHint").textContent = S.target==="today"
-    ? `Holds every combination at your current day: ${fmt(tk)} kcal, ${fmt(td.f)} g fat, ${fmt(td.c)} g carbs, with protein at ${fmt(td.p)} g or more.`
-    : `Your current day is ${fmt(tk)} kcal and ${fmt(td.f)} g fat with these values. This target sets fat to ${T.f} g through the oil and fills the rest with carbs.`;
+    ? `Holds every combination at your old flat day: ${fmt(tk)} kcal, ${fmt(td.f)} g fat, ${fmt(td.c)} g carbs, with protein at ${fmt(td.p)} g or more.`
+    : T.weekend
+    ? `Monday to Friday: ${fmt(T.k)} kcal with fat at ${T.f} g, which usually means no olive oil. Saturday and Sunday: eat this same day, and drinks and extras can take you up to ${fmt(T.weekend.k)} kcal, never more.`
+    : `Your old flat day is ${fmt(tk)} kcal and ${fmt(td.f)} g fat with these values. This target sets fat to ${T.f} g through the oil and fills the rest with carbs.`;
 
   // carb output
   const carbBox = (cp, meal)=> cp ? `<div class="carb"><span class="eyebrow">${meal} carb</span><div class="big num">${fmt(cp.g)} g${cp.c.dry?" dry":""}</div><div class="what">${cp.c.name}</div><div class="sub">${unitText(cp)} · ${fmt(cp.k)} kcal · ${fmt(cp.C)} g carbs</div></div>` : "";
   const oilBox = `<div class="carb"><span class="eyebrow">Dinner olive oil</span><div class="big num">${r.oilG<0.5?"0":fmt(r.oilG)} g</div><div class="what">Extra-virgin olive oil</div><div class="sub">${r.oilG<0.5?"none today":oilText(r.oilG).replace(/ \(.*\)/,"")} · ${fmt(r.oilG*OIL.k)} kcal · your usual is 1 tbsp</div></div>`;
-  $("carbOut").innerHTML = carbBox(r.dc,"Dinner") + carbBox(r.tc,"Turkey meal") + oilBox;
+  const room = T.weekend ? T.weekend.k - (T.k + Math.max(0,-r.flex)) : 0;
+  const weekendBox = T.weekend ? `<div class="carb"><span class="eyebrow">Sat and Sun extras</span><div class="big num">${fmt(room)} kcal</div><div class="what">Drinks and extras, at most</div><div class="sub">About ${Math.floor(room/110)} light beers, ${Math.floor(room/150)} regular or ${Math.floor(room/250)} IPAs · ${fmt(T.weekend.k)} kcal ceiling</div></div>` : "";
+  $("carbOut").innerHTML = carbBox(r.dc,"Dinner") + carbBox(r.tc,"Turkey meal") + oilBox + weekendBox;
 
   // totals
   const all = [...r.rows];
@@ -597,6 +607,8 @@ function saveChecklistPlan(all, T){
     protein:Math.round(g.rows.reduce((a,x)=>a+x.p,0))
   }));
   const target = {label:T.label, kcal:Math.round(T.k), protein:Math.round(T.p)};
+  // Saturday and Sunday tick off the same meals against the higher ceiling.
+  if(T.weekend) target.weekend = {label:T.weekend.label, kcal:T.weekend.k, protein:T.weekend.p};
   try{
     // Only a real change gets a new timestamp, so just opening this page doesn't
     // outrank a newer pick saved from another device.

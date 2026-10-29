@@ -10,13 +10,24 @@ export interface MealItem {
   detail: string;
   kcal: number;
   protein: number;
+  /** A drink or extra food logged on the day rather than planned by the switcher. */
+  extra?: boolean;
+}
+
+export interface MealTarget {
+  label: string;
+  kcal: number;
+  protein: number;
 }
 
 export interface MealPlan {
   v: 1;
   /** When the switcher last changed the plan. Newer wins across devices. */
   at: string;
-  target: { label: string; kcal: number; protein: number };
+  target: MealTarget & {
+    /** Saturday and Sunday ceiling for the same meals, when the phase has one. */
+    weekend?: MealTarget;
+  };
   items: MealItem[];
 }
 
@@ -30,13 +41,20 @@ export interface MealDay {
 export const PLAN_STORAGE_KEY = "mealChecklistPlan";
 
 /**
- * Ryan's current day (2,300 kcal, 200 g protein), exactly as the switcher
- * builds it with its defaults. Used until the switcher has been opened.
+ * Ryan's Phase 1 weekday (2,100 kcal, 198 g protein), exactly as the switcher
+ * builds it with its defaults: no olive oil and 70 g dry rice. Saturday and
+ * Sunday tick off the same meals against a 2,800 kcal ceiling. Used until the
+ * switcher has been opened.
  */
 export const DEFAULT_PLAN: MealPlan = {
   v: 1,
   at: "1970-01-01T00:00:00.000Z",
-  target: { label: "Your current day", kcal: 2300, protein: 200 },
+  target: {
+    label: "Phase 1 weekday",
+    kcal: 2100,
+    protein: 160,
+    weekend: { label: "Phase 1 weekend", kcal: 2800, protein: 160 },
+  },
   items: [
     {
       id: "breakfast",
@@ -65,13 +83,46 @@ export const DEFAULT_PLAN: MealPlan = {
     {
       id: "dinner",
       label: "Chicken dinner",
-      detail: "Plain, 6 oz cooked (weighed) · Your white rice (weighed dry), 92 g dry",
-      kcal: 622,
-      protein: 61,
+      detail: "Plain, 6 oz cooked (weighed) · Your white rice (weighed dry), 70 g dry",
+      kcal: 540,
+      protein: 59,
     },
-    { id: "oil", label: "Olive oil", detail: "Olive oil, 1.0 tbsp (13 g)", kcal: 118, protein: 0 },
   ],
 };
+
+/** One-tap drinks and extras, with typical label calories. */
+export const EXTRA_PRESETS: { label: string; kcal: number; protein: number }[] = [
+  { label: "Light beer", kcal: 100, protein: 1 },
+  { label: "Regular beer", kcal: 150, protein: 1 },
+  { label: "IPA", kcal: 250, protein: 2 },
+  { label: "Seltzer or spirit", kcal: 100, protein: 0 },
+  { label: "Cocktail", kcal: 250, protein: 0 },
+];
+
+export function isWeekend(day: string): boolean {
+  const weekday = new Date(`${day}T12:00:00`).getDay();
+  return weekday === 0 || weekday === 6;
+}
+
+/** The target a day is held to: the weekend ceiling on Saturday and Sunday when the plan has one. */
+export function targetForDay(plan: MealPlan, day: string): MealTarget {
+  const { weekend, ...weekday } = plan.target;
+  return weekend && isWeekend(day) ? weekend : weekday;
+}
+
+/** Adds a drink or extra food to a day's plan and returns its id, so it can be ticked. */
+export function addExtra(
+  plan: MealPlan,
+  extra: { label: string; kcal: number; protein: number },
+  id: string,
+): MealPlan {
+  const item: MealItem = { id, label: extra.label, detail: "Extra", kcal: extra.kcal, protein: extra.protein, extra: true };
+  return { ...plan, items: [...plan.items, item] };
+}
+
+export function removeItem(plan: MealPlan, id: string): MealPlan {
+  return { ...plan, items: plan.items.filter((i) => i.id !== id) };
+}
 
 /** Today as YYYY-MM-DD in the lifter's own timezone, not UTC. */
 export function localToday(now: Date = new Date()): string {
@@ -133,7 +184,12 @@ export function planForDay(
     (p): p is MealPlan => p !== null,
   );
   candidates.sort((a, b) => b.at.localeCompare(a.at));
-  return candidates[0] ?? DEFAULT_PLAN;
+  const base = candidates[0] ?? DEFAULT_PLAN;
+  // Extras belong to the day they were logged on, whichever plan the meals come from.
+  const extras = own?.items.filter((i) => i.extra) ?? [];
+  const meals = base.items.filter((i) => !i.extra);
+  if (extras.length === 0 && meals.length === base.items.length) return base;
+  return { ...base, items: [...meals, ...extras] };
 }
 
 export interface MealTotals {

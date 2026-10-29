@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_PLAN,
+  addExtra,
+  isWeekend,
   localToday,
   mealTotals,
   parsePlan,
   planForDay,
   shiftDay,
+  targetForDay,
   type MealPlan,
 } from "@/lib/meals";
 
@@ -16,10 +19,31 @@ const plan = (at: string, dinnerKcal: number): MealPlan => ({
 });
 
 describe("meal checklist", () => {
-  it("the default plan is Ryan's 2,300 kcal / 200 g protein day", () => {
+  it("the default plan is Ryan's 2,100 kcal Phase 1 weekday", () => {
     const all = mealTotals(DEFAULT_PLAN, DEFAULT_PLAN.items.map((i) => i.id));
-    expect(all).toEqual({ kcal: 2300, protein: 200, done: 7 });
-    expect(DEFAULT_PLAN.target).toMatchObject({ kcal: 2300, protein: 200 });
+    expect(all).toEqual({ kcal: 2100, protein: 198, done: 6 });
+    expect(DEFAULT_PLAN.target).toMatchObject({ kcal: 2100, protein: 160, weekend: { kcal: 2800 } });
+  });
+
+  it("Saturday and Sunday are held to the weekend ceiling", () => {
+    expect(isWeekend("2026-10-31")).toBe(true); // Saturday
+    expect(isWeekend("2026-11-01")).toBe(true); // Sunday
+    expect(isWeekend("2026-11-02")).toBe(false);
+    expect(targetForDay(DEFAULT_PLAN, "2026-10-31").kcal).toBe(2800);
+    expect(targetForDay(DEFAULT_PLAN, "2026-10-30").kcal).toBe(2100);
+    const flat: MealPlan = { ...DEFAULT_PLAN, target: { label: "Phase 2", kcal: 2900, protein: 160 } };
+    expect(targetForDay(flat, "2026-10-31").kcal).toBe(2900);
+  });
+
+  it("extras stay on today even when the switcher's plan is newer", () => {
+    const withBeer = addExtra(plan("2026-10-20T08:00:00Z", 540), { label: "IPA", kcal: 250, protein: 2 }, "extra-1");
+    const saved = [{ day: "2026-10-31", checked: ["extra-1"], plan: withBeer }];
+    const local = plan("2026-10-31T09:00:00Z", 600);
+    const today = planForDay("2026-10-31", "2026-10-31", saved, local);
+    expect(today.items.find((i) => i.id === "dinner")?.kcal).toBe(600);
+    expect(mealTotals(today, ["extra-1"]).kcal).toBe(250);
+    // A different day doesn't inherit them.
+    expect(planForDay("2026-11-01", "2026-11-01", saved, local).items.some((i) => i.extra)).toBe(false);
   });
 
   it("adds up only the ticked meals", () => {

@@ -6,13 +6,14 @@ test.describe("Meal checklist", () => {
     await signUp(page, uniqueEmail("meals"));
     await gotoView(page, "Meals");
 
-    await expect(page.getByText("0 of 7 meals done")).toBeVisible();
+    await expect(page.getByText(/^0 of 6 items done/)).toBeVisible();
     await page.getByRole("checkbox", { name: /Oats breakfast/ }).check();
     await page.getByRole("checkbox", { name: /Chicken dinner/ }).check();
-    await expect(page.getByText("2 of 7 meals done")).toBeVisible();
-    await expect(page.getByText("/ 2,300 kcal")).toBeVisible();
-    await expect(page.locator(".meter").first()).toContainText("1,149");
-    await expect(page.locator(".meter").nth(1)).toContainText("103");
+    await expect(page.getByText(/^2 of 6 items done/)).toBeVisible();
+    // 2,100 Monday to Friday, a 2,800 ceiling on Saturday and Sunday.
+    await expect(page.locator(".meter").first()).toContainText(/\/ 2,[18]00 kcal/);
+    await expect(page.locator(".meter").first()).toContainText("1,067");
+    await expect(page.locator(".meter").nth(1)).toContainText("101");
     await expectNoError(page);
 
     await page.reload();
@@ -23,7 +24,21 @@ test.describe("Meal checklist", () => {
     // Yesterday is its own day.
     await page.getByRole("button", { name: "Previous day" }).click();
     await expect(page.getByText("Yesterday")).toBeVisible();
-    await expect(page.getByText("0 of 7 meals done")).toBeVisible();
+    await expect(page.getByText(/^0 of 6 items done/)).toBeVisible();
+  });
+
+  test("a beer is logged as an extra and unticking removes it", async ({ page }) => {
+    await signUp(page, uniqueEmail("meals-extra"));
+    await gotoView(page, "Meals");
+    await page.getByRole("button", { name: /Light beer/ }).click();
+    await expect(page.getByRole("checkbox", { name: /Light beer/ })).toBeChecked();
+    await expect(page.locator(".meter").first()).toContainText("100");
+    await page.reload();
+    await gotoView(page, "Meals");
+    // Unticking removes the row, so click rather than uncheck (which waits for an unchecked box).
+    await page.getByRole("checkbox", { name: /Light beer/ }).click();
+    await expect(page.getByRole("checkbox", { name: /Light beer/ })).toHaveCount(0);
+    await expectNoError(page);
   });
 
   test("the dinner follows the chicken picked in the switcher", async ({ page }) => {

@@ -426,6 +426,17 @@ td {
   color: #687384;
 }
 
+.meal-extras {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.meter.over .meter-bar i {
+  background: #c0392b;
+}
+
 .meal-totals {
   position: sticky;
   bottom: 0;

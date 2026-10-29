@@ -1,5 +1,15 @@
 # Changelog
 
+## Weekday and weekend calorie targets (2026-10-29)
+- Meal switcher: Phase 1 is now 2,100 kcal Monday to Friday (fat 54 g, so no
+  olive oil and about 70 g dry rice) with a 2,800 kcal ceiling on Saturday and
+  Sunday for the same meals plus drinks and extras. The old flat 2,300 day stays
+  as "Old day". Saved picks carry over to the new target.
+- Meals tab: Saturday and Sunday count against the 2,800 ceiling (red when
+  over) and show what's left. One-tap buttons log a light beer, beer, IPA,
+  seltzer, cocktail or any other calories as an extra for that day; unticking
+  removes it. No new migration: extras ride in the day's saved plan.
+
 ## Daily meal checklist (2026-10-20)
 - New Meals tab: tick off the day's seven fixed meals (oats breakfast, Musashi
   bar, Uncrustable, rice cakes + PB, turkey meal, chicken dinner, olive oil)
