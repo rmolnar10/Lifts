@@ -157,12 +157,12 @@ describe("exercise-specific increments", () => {
     expect(suggest(pull, VOLUME, history, {}).weight).toBe(165);
   });
 
-  it("handles the cable lateral raise range topping out", () => {
-    const lat = exerciseById(PROGRAM[VOLUME], "cablelat");
-    const history = [workout(VOLUME, "cablelat", { reps: [12, 12, 12], weight: 15 })];
+  it("moves the lateral raise to 20 lb once 15 lb tops out the 6–10 range", () => {
+    const lat = exerciseById(PROGRAM[VOLUME], "latV");
+    const history = [workout(VOLUME, "latV", { reps: [10, 10, 10], weight: 15 })];
     const s = suggest(lat, VOLUME, history, {});
-    expect(s.target).toBe("20 lb × 8–12");
-    expect(s.focus).toBe("All sets reached 12. Increase load.");
+    expect(s.target).toBe("20 lb × 6–10");
+    expect(s.focus).toBe("All sets reached 10. Increase load.");
   });
 });
 
