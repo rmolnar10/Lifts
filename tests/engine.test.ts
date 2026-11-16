@@ -156,6 +156,18 @@ describe("rule 3: adding load", () => {
     expect(p.focus).toContain("Go back to 4 sets");
   });
 
+  it("adds load when the program's sets top out, even if an earned set falls short", () => {
+    const history = [session("bench", { reps: [8, 8, 8, 8, 6], weight: 135, rir: 1 })];
+    const p = plan("bench", history);
+    expect(p.status).toBe("add-load");
+    expect(p.weight).toBe(140);
+  });
+
+  it("does not add load while one of the program's own sets is short", () => {
+    const history = [session("wpull", { reps: [10, 10, 9, 10], weight: 0, rir: 1 })];
+    expect(planNext(pull, HEAVY, history, {}).status).not.toBe("add-load");
+  });
+
   it("starts a bodyweight pull-up on the smallest plate, never a double jump", () => {
     const history = [session("wpull", { reps: [10, 10, 10], weight: 0, rir: 4 })];
     const p = planNext(pull, HEAVY, history, {});

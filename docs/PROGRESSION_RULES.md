@@ -72,8 +72,9 @@ The cascade, first match wins:
    against a lift: it is ignored when judging stalls and progress streaks.
 2. **Form broke down last session** — hold the load and repeat the numbers
    cleanly. Twice running at the same load: drop one increment.
-3. **Every set at the top of the range** — add load, back to the program's set
-   count. Two increments when the final set had 3+ RIR (late novice), one
+3. **The program's sets at the top of the range** — add load, back to the
+   program's set count. A set earned under rule 5 is bonus volume and does not
+   have to reach the top; only the program's own sets gate the load. Two increments when the final set had 3+ RIR (late novice), one
    otherwise. Unrecorded form counts as held, so pre-V6 history works as before.
 4. **Stalled** — 4 sessions at one load with no rep gained (late novice; an
    intermediate would be 3). In a **deficit** the load holds, any added set is
