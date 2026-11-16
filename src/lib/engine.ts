@@ -159,9 +159,16 @@ export function progressStreak(sessions: Session[]): number {
   return streak;
 }
 
-/** All sets the lifter did reached the top, and there were at least enough of them. */
+/**
+ * The program's own sets all reached the top. A set earned by rule 5 is bonus
+ * volume: it is done last and fatigued, so it is nearly always the weakest,
+ * and letting it gate the load kept lifts at one weight for weeks.
+ */
 function toppedOut(exercise: Exercise, reps: number[]): boolean {
-  return reps.length >= exercise.sets && reps.every((r) => r >= exercise.max);
+  return (
+    reps.length >= exercise.sets &&
+    reps.slice(0, exercise.sets).every((r) => r >= exercise.max)
+  );
 }
 
 function formatLoad(weight: number, exercise: Exercise): string {
