@@ -21,7 +21,7 @@ const plan = (at: string, dinnerKcal: number): MealPlan => ({
 describe("meal checklist", () => {
   it("the default plan is Ryan's confirmed cut day against 1,900 every day", () => {
     const all = mealTotals(DEFAULT_PLAN, DEFAULT_PLAN.items.map((i) => i.id));
-    expect(all).toEqual({ kcal: 1964, protein: 193, done: 5 });
+    expect(all).toEqual({ kcal: 1900, protein: 191, done: 5 });
     expect(DEFAULT_PLAN.target).toEqual({ label: "Cut", kcal: 1900, protein: 180 });
     expect(DEFAULT_PLAN.items.map((i) => i.id)).not.toContain("uncrustable");
     expect(DEFAULT_PLAN.items.map((i) => i.id)).not.toContain("oil");

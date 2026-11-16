@@ -12,8 +12,8 @@ test.describe("Meal checklist", () => {
     await expect(page.getByText(/^2 of 5 items done/)).toBeVisible();
     // 1,900 every day on the cut, weekends included.
     await expect(page.locator(".meter").first()).toContainText("/ 1,900 kcal");
-    await expect(page.locator(".meter").first()).toContainText("1,151");
-    await expect(page.locator(".meter").nth(1)).toContainText("102");
+    await expect(page.locator(".meter").first()).toContainText("1,087");
+    await expect(page.locator(".meter").nth(1)).toContainText("100");
     await expect(page.getByRole("checkbox", { name: /Uncrustable/ })).toHaveCount(0);
     await expectNoError(page);
 
@@ -46,7 +46,7 @@ test.describe("Meal checklist", () => {
     await signUp(page, uniqueEmail("meals-snack"));
     await page.goto("/meals");
     await page.locator("#snack").selectOption("yog");
-    await expect(page.locator("#dayTable")).toContainText("65 g dry");
+    await expect(page.locator("#dayTable")).toContainText("48 g dry");
     await page.goto("/");
     await gotoView(page, "Meals");
     await expect(page.getByRole("checkbox", { name: /Evening snack/ })).toBeVisible();

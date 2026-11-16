@@ -494,17 +494,16 @@ function todayMacros(st=S){
   const s = compute({...st, chicken:"plain6", turkey:"t4", dVeg:"none", tVeg:"broc", snack:"none"}).sum, rice = byId(CARBS,"myrice"), g = USUAL_RICE_G;
   return {k:s.k + g*rice.k/100, p:s.p + g*rice.p/100, c:s.c + g*rice.c/100, f:s.f + g*rice.f/100, fb:s.fb + g*rice.fb/100};
 }
-/* On the cut the rice holds your confirmed day's calories, so a saucier chicken or an
-   evening snack comes out of the rice. Phase 2 fills the rice up to its target. */
+/* The dinner rice fills whatever the target leaves, so a saucier chicken or an
+   evening snack comes out of the rice and the day lands on the target. */
 function targetFor(st){
-  const T = TARGETS[st.target] || TARGETS.cut;
-  return st.target==="cut" ? {...T, hold:todayMacros(st).k} : T;
+  return TARGETS[st.target] || TARGETS.cut;
 }
 function solve(st){
   const {rows, base, sum} = compute(st);
   const T = targetFor(st);
   const two = st.tCarb!=="none" && st.dCarb!=="none";
-  const flex = (T.hold ?? T.k) - base;
+  const flex = T.k - base;
   const dK = st.dCarb==="none" ? 0 : (two? flex/2 : flex);
   const tK = st.tCarb==="none" ? 0 : (st.dCarb==="none"? flex : flex/2);
   return {rows, base, sum, T, flex, dc:carbPortion(st.dCarb, dK), tc:carbPortion(st.tCarb, tK)};
@@ -537,7 +536,7 @@ function update(){
   const r = solve(S), T = r.T;
   const td = todayMacros(), tk = Math.round(td.k);
   $("targetHint").textContent = S.target==="cut"
-    ? `${fmt(T.k)} kcal and at least ${T.p} g protein every day, weekends included, until your waist is 33 in. Beer and extras count inside the ${fmt(T.k)}. The rice holds your usual day (${fmt(tk)} kcal with ${USUAL_RICE_G} g dry rice), so a saucier chicken or an evening snack comes out of the rice.`
+    ? `${fmt(T.k)} kcal and at least ${T.p} g protein every day, weekends included, until your waist is 33 in. Beer and extras count inside the ${fmt(T.k)}. The dinner rice fills what's left, so a saucier chicken or an evening snack comes out of the rice.`
     : `Lean gain at ${fmt(T.k)} kcal. Your usual day is ${fmt(tk)} kcal, so the rice fills the other ${fmt(T.k - tk)}. Add a carb to the turkey meal to split it.`;
 
   // carb output
@@ -556,7 +555,7 @@ function update(){
   if(S.target==="cut"){
     const room = T.k - tot.k, rice = byId(CARBS,"myrice");
     $("carbOut").innerHTML += room >= 0
-      ? `<div class="carb"><span class="eyebrow">Room for beer and extras</span><div class="big num">${fmt(room)} kcal</div><div class="what">Left inside ${fmt(T.k)}</div><div class="sub">More than that? Trim dinner rice about 27 g dry per 100 kcal.</div></div>`
+      ? `<div class="carb"><span class="eyebrow">Room for beer and extras</span><div class="big num">${fmt(room)} kcal</div><div class="what">Left inside ${fmt(T.k)}</div><div class="sub">Logging a beer or extra? Trim dinner rice about 27 g dry per 100 kcal.</div></div>`
       : `<div class="carb"><span class="eyebrow">Over ${fmt(T.k)} by</span><div class="big num">${fmt(-room)} kcal</div><div class="what">Trim about ${fmt(-room/(rice.k/100))} g dry rice to land on ${fmt(T.k)}</div><div class="sub">Beer and extras need the same trade, about 27 g dry rice per 100 kcal.</div></div>`;
   }
 
@@ -654,7 +653,7 @@ document.addEventListener("click", e=>{
 
 function renderOffsets(){
   const T = targetFor(S);
-  $("offsetIntro").innerHTML = `Your rice at dinner (grams dry; 46 g is one serving, about 1 cup cooked) that keeps the day at <b>${fmt(T.hold ?? T.k)} kcal</b> (${T.label.toLowerCase()}${T.hold?", your usual day with "+USUAL_RICE_G+" g rice":""}). Assumes rice only at dinner, broccoli only with the turkey, and your current fixed foods and evening snack. It follows the settings above.`;
+  $("offsetIntro").innerHTML = `Your rice at dinner (grams dry; 46 g is one serving, about 1 cup cooked) that keeps the day at <b>${fmt(T.k)} kcal</b> (${T.label.toLowerCase()}). Assumes rice only at dinner, broccoli only with the turkey, and your current fixed foods and evening snack. It follows the settings above.`;
   const chs = CHICKEN.filter(c=>c.id!=="plainb");
   let h = `<thead><tr><th>Dinner style ↓ / Turkey →</th>${TURKEY.map(t=>`<th class="n">${t.name.replace(" (weighed)","").replace("Plain 99%, ","").replace(" portion (1 of 16)","").replace("Chipotle ","").replace(" in crushed tomato","").replace(" (egg + panko)","")}</th>`).join("")}</tr></thead><tbody>`;
   for(const c of chs){
