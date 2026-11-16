@@ -128,34 +128,41 @@ describe("exercise-specific increments", () => {
   });
 
   it("progresses bodyweight pull-ups by reps, without printing a phantom load", () => {
-    const pull = exerciseById(PROGRAM[VOLUME], "pull");
-    const history = [workout(VOLUME, "pull", { reps: [8, 7, 6], weight: 0, unit: "lb" })];
-    const s = suggest(pull, VOLUME, history, {});
+    const wpull = exerciseById(PROGRAM[HEAVY], "wpull");
+    const history = [workout(HEAVY, "wpull", { reps: [8, 7, 6], weight: 0, unit: "lb" })];
+    const s = suggest(wpull, HEAVY, history, {});
     expect(s.target).toBe("Bodyweight × 8 / 7 / 7");
     expect(s.target).not.toContain("0 lb");
   });
 
   it("sends bodyweight pull-ups to external load once the range tops out", () => {
-    const pull = exerciseById(PROGRAM[VOLUME], "pull");
-    const history = [workout(VOLUME, "pull", { reps: [10, 10, 10], weight: 0, unit: "lb" })];
-    const s = suggest(pull, VOLUME, history, {});
-    expect(s.target).toBe("2.5 lb × 6–10");
+    const wpull = exerciseById(PROGRAM[HEAVY], "wpull");
+    const history = [workout(HEAVY, "wpull", { reps: [10, 10, 10], weight: 0, unit: "lb" })];
+    const s = suggest(wpull, HEAVY, history, {});
+    expect(s.target).toBe("2.5 lb × 5–10");
     expect(s.focus).toBe("All sets reached 10. Start adding external load.");
     expect(s.weight).toBe(2.5);
   });
 
   it("treats an already-weighted pull-up as a normal loaded exercise", () => {
-    const pull = exerciseById(PROGRAM[VOLUME], "pull");
-    const history = [workout(VOLUME, "pull", { reps: [10, 9, 8], weight: 25, unit: "lb" })];
-    expect(suggest(pull, VOLUME, history, {}).target).toBe("25 lb × 10 / 9 / 9");
+    const wpull = exerciseById(PROGRAM[HEAVY], "wpull");
+    const history = [workout(HEAVY, "wpull", { reps: [10, 9, 8], weight: 25, unit: "lb" })];
+    expect(suggest(wpull, HEAVY, history, {}).target).toBe("25 lb × 10 / 9 / 9");
   });
 
-  it("handles the lateral-raise range topping out", () => {
+  it("keeps the lat pulldown on the load logged under the old pull-up slot", () => {
+    const pull = exerciseById(PROGRAM[VOLUME], "pull");
+    expect(pull.name).toBe("Lat Pulldown");
+    const history = [workout(VOLUME, "pull", { reps: [7, 6, 6], weight: 165, unit: "lb" })];
+    expect(suggest(pull, VOLUME, history, {}).weight).toBe(165);
+  });
+
+  it("moves the lateral raise to 20 lb once 15 lb tops out the 6–10 range", () => {
     const lat = exerciseById(PROGRAM[VOLUME], "latV");
-    const history = [workout(VOLUME, "latV", { reps: [15, 15, 15, 15], weight: 15 })];
+    const history = [workout(VOLUME, "latV", { reps: [10, 10, 10], weight: 15 })];
     const s = suggest(lat, VOLUME, history, {});
-    expect(s.target).toBe("20 lb × 8–15");
-    expect(s.focus).toBe("All sets reached 15. Increase load.");
+    expect(s.target).toBe("20 lb × 6–10");
+    expect(s.focus).toBe("All sets reached 10. Increase load.");
   });
 });
 

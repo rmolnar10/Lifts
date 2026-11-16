@@ -60,16 +60,20 @@ export const PROGRAM: Program = {
     { id: "wpull", name: "Pull-Up", sets: 3, min: 5, max: 10, type: "bodyweight", unit: "lb", inc: 2.5, reset: 5, rest: 180, targetRpe: [9, 10] },
     { id: "crowH", name: "Seated Cable Row", sets: 3, min: 8, max: 12, type: "isolation", unit: "lb", inc: 5, reset: 8, rest: 120, targetRpe: [9, 10] },
     { id: "shoulder", name: "DB Shoulder Press", sets: 3, min: 6, max: 10, type: "primary", unit: "lb", inc: 5, reset: 6, rest: 150, targetRpe: [8, 9] },
-    { id: "latH", name: "Lateral Raise", sets: 4, min: 8, max: 15, type: "isolation", unit: "lb", inc: 5, reset: 8, rest: 90, targetRpe: [9, 10], dropset: true },
+    // Heavier and lower-rep than before, with no dropset: the high-rep version
+    // sat at 15 lb for 11 weeks and was the most dreaded lift in the program.
+    { id: "latH", name: "Lateral Raise", sets: 3, min: 6, max: 10, type: "isolation", unit: "lb", inc: 5, reset: 6, rest: 90, targetRpe: [8, 9] },
     { id: "tri", name: "Triceps Pushdown", sets: 3, min: 10, max: 15, type: "isolation", unit: "lb", inc: 5, reset: 10, rest: 0, targetRpe: [9, 10], dropset: true, supersetGroup: "A1" },
     { id: "curl", name: "Machine Curl", sets: 3, min: 8, max: 12, type: "isolation", unit: "lb", inc: 5, reset: 8, rest: 90, targetRpe: [9, 10], dropset: true, supersetGroup: "A2" },
   ],
   "Volume Upper": [
     { id: "incline", name: "Incline Smith Machine Bench Press", sets: 4, min: 6, max: 10, type: "primary", unit: "lb", inc: 5, reset: 6, rest: 150, targetRpe: [8, 9] },
     { id: "fly", name: "Cable Fly", sets: 3, min: 10, max: 15, type: "isolation", unit: "lb", inc: 5, reset: 10, rest: 90, targetRpe: [9, 10] },
-    { id: "pull", name: "Pull-Up", sets: 3, min: 6, max: 10, type: "bodyweight", unit: "lb", inc: 2.5, reset: 6, rest: 150, targetRpe: [9, 10] },
+    // Same id as the old Pull-Up slot, so the pulldown sessions already logged
+    // here (165 lb) keep driving the next target.
+    { id: "pull", name: "Lat Pulldown", sets: 3, min: 6, max: 10, type: "isolation", unit: "lb", inc: 5, reset: 6, rest: 120, targetRpe: [8, 9] },
     { id: "crowV", name: "Seated Cable Row", sets: 2, min: 10, max: 15, type: "isolation", unit: "lb", inc: 5, reset: 10, rest: 120, targetRpe: [9, 10] },
-    { id: "latV", name: "Lateral Raise", sets: 4, min: 8, max: 15, type: "isolation", unit: "lb", inc: 5, reset: 8, rest: 90, targetRpe: [9, 10], dropset: true },
+    { id: "latV", name: "Lateral Raise", sets: 3, min: 6, max: 10, type: "isolation", unit: "lb", inc: 5, reset: 6, rest: 90, targetRpe: [8, 9] },
     { id: "hammer", name: "Hammer Curl", sets: 3, min: 8, max: 12, type: "isolation", unit: "lb", inc: 5, reset: 8, rest: 0, targetRpe: [9, 10], dropset: true, supersetGroup: "A1" },
     { id: "ohtri", name: "Overhead Triceps Extension", sets: 3, min: 10, max: 15, type: "isolation", unit: "lb", inc: 5, reset: 10, rest: 90, targetRpe: [9, 10], dropset: true, supersetGroup: "A2" },
     { id: "hlr", name: "Hanging Leg Raise", sets: 3, min: 8, max: 15, type: "quality", unit: "reps", inc: 0, reset: 8, rest: 90 },

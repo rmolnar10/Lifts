@@ -88,7 +88,7 @@ describe("coaching: diagnosing a stall", () => {
 
   it("is still 'building' before the stall threshold", () => {
     const history = Array.from({ length: STALL_SESSIONS - 1 }, () =>
-      workout(VOLUME, "latV", { reps: [15, 15, 12], weight: 15 }),
+      workout(VOLUME, "latV", { reps: [10, 10, 8], weight: 15 }),
     );
     expect(coachExercise(find(VOLUME, "latV"), VOLUME, history).status).toBe("building");
   });
