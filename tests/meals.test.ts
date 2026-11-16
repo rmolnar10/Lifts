@@ -19,47 +19,61 @@ const plan = (at: string, dinnerKcal: number): MealPlan => ({
 });
 
 describe("meal checklist", () => {
-  it("the default plan is Ryan's 2,100 kcal Phase 1 weekday", () => {
+  it("the default plan is Ryan's confirmed cut day against 1,900 every day", () => {
     const all = mealTotals(DEFAULT_PLAN, DEFAULT_PLAN.items.map((i) => i.id));
-    expect(all).toEqual({ kcal: 2100, protein: 198, done: 6 });
-    expect(DEFAULT_PLAN.target).toMatchObject({ kcal: 2100, protein: 160, weekend: { kcal: 2800 } });
+    expect(all).toEqual({ kcal: 1964, protein: 193, done: 5 });
+    expect(DEFAULT_PLAN.target).toEqual({ label: "Cut", kcal: 1900, protein: 180 });
+    expect(DEFAULT_PLAN.items.map((i) => i.id)).not.toContain("uncrustable");
+    expect(DEFAULT_PLAN.items.map((i) => i.id)).not.toContain("oil");
+    // The cut has no weekend ceiling: Saturday is 1,900 like any other day.
+    expect(targetForDay(DEFAULT_PLAN, "2026-11-21").kcal).toBe(1900);
   });
 
-  it("Saturday and Sunday are held to the weekend ceiling", () => {
+  it("an old plan's weekend ceiling still applies to the days it was saved on", () => {
     expect(isWeekend("2026-10-31")).toBe(true); // Saturday
     expect(isWeekend("2026-11-01")).toBe(true); // Sunday
     expect(isWeekend("2026-11-02")).toBe(false);
-    expect(targetForDay(DEFAULT_PLAN, "2026-10-31").kcal).toBe(2800);
-    expect(targetForDay(DEFAULT_PLAN, "2026-10-30").kcal).toBe(2100);
-    const flat: MealPlan = { ...DEFAULT_PLAN, target: { label: "Phase 2", kcal: 2900, protein: 160 } };
-    expect(targetForDay(flat, "2026-10-31").kcal).toBe(2900);
+    const old: MealPlan = {
+      ...DEFAULT_PLAN,
+      target: { label: "Phase 1 weekday", kcal: 2100, protein: 160, weekend: { label: "Phase 1 weekend", kcal: 2800, protein: 160 } },
+    };
+    expect(targetForDay(old, "2026-10-31").kcal).toBe(2800);
+    expect(targetForDay(old, "2026-10-30").kcal).toBe(2100);
+  });
+
+  it("today ignores plans the switcher wrote before the cut", () => {
+    const stale = { ...plan("2026-11-10T08:00:00Z", 540), target: { label: "Phase 1 weekday", kcal: 2100, protein: 160 } };
+    const saved = [{ day: "2026-11-10", checked: ["dinner"], plan: stale }];
+    expect(planForDay("2026-11-17", "2026-11-17", saved, stale)).toBe(DEFAULT_PLAN);
+    // The day it was saved on keeps it.
+    expect(planForDay("2026-11-10", "2026-11-17", saved, stale)).toBe(stale);
   });
 
   it("extras stay on today even when the switcher's plan is newer", () => {
-    const withBeer = addExtra(plan("2026-10-20T08:00:00Z", 540), { label: "IPA", kcal: 250, protein: 2 }, "extra-1");
-    const saved = [{ day: "2026-10-31", checked: ["extra-1"], plan: withBeer }];
-    const local = plan("2026-10-31T09:00:00Z", 600);
-    const today = planForDay("2026-10-31", "2026-10-31", saved, local);
+    const withBeer = addExtra(plan("2026-11-20T08:00:00Z", 540), { label: "IPA", kcal: 250, protein: 2 }, "extra-1");
+    const saved = [{ day: "2026-11-21", checked: ["extra-1"], plan: withBeer }];
+    const local = plan("2026-11-21T09:00:00Z", 600);
+    const today = planForDay("2026-11-21", "2026-11-21", saved, local);
     expect(today.items.find((i) => i.id === "dinner")?.kcal).toBe(600);
     expect(mealTotals(today, ["extra-1"]).kcal).toBe(250);
     // A different day doesn't inherit them.
-    expect(planForDay("2026-11-01", "2026-11-01", saved, local).items.some((i) => i.extra)).toBe(false);
+    expect(planForDay("2026-11-22", "2026-11-22", saved, local).items.some((i) => i.extra)).toBe(false);
   });
 
   it("adds up only the ticked meals", () => {
     expect(mealTotals(DEFAULT_PLAN, ["breakfast", "musashi", "gone"])).toEqual({
-      kcal: 847,
-      protein: 88,
+      kcal: 870,
+      protein: 86,
       done: 2,
     });
   });
 
   it("today follows the newest switcher pick, local or saved", () => {
-    const local = plan("2026-10-20T08:00:00Z", 700);
-    const saved = [{ day: "2026-10-19", checked: [], plan: plan("2026-10-20T09:00:00Z", 650) }];
-    expect(planForDay("2026-10-20", "2026-10-20", saved, local).items[5].kcal).toBe(650);
-    expect(planForDay("2026-10-20", "2026-10-20", [], local).items[5].kcal).toBe(700);
-    expect(planForDay("2026-10-20", "2026-10-20", [], null)).toBe(DEFAULT_PLAN);
+    const local = plan("2026-11-20T08:00:00Z", 700);
+    const saved = [{ day: "2026-11-19", checked: [], plan: plan("2026-11-20T09:00:00Z", 650) }];
+    expect(planForDay("2026-11-20", "2026-11-20", saved, local).items.find((i) => i.id === "dinner")?.kcal).toBe(650);
+    expect(planForDay("2026-11-20", "2026-11-20", [], local).items.find((i) => i.id === "dinner")?.kcal).toBe(700);
+    expect(planForDay("2026-11-20", "2026-11-20", [], null)).toBe(DEFAULT_PLAN);
   });
 
   it("a past day keeps the plan it was ticked against", () => {

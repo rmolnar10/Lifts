@@ -41,37 +41,38 @@ export interface MealDay {
 export const PLAN_STORAGE_KEY = "mealChecklistPlan";
 
 /**
- * Ryan's Phase 1 weekday (2,100 kcal, 198 g protein), exactly as the switcher
- * builds it with its defaults: no olive oil and 70 g dry rice. Saturday and
- * Sunday tick off the same meals against a 2,800 kcal ceiling. Used until the
- * switcher has been opened.
+ * Plans the switcher wrote before the 1,900 kcal cut (2026-11-16) still list the
+ * Uncrustable and olive oil and the old 2,100 / 2,800 targets. Today ignores them;
+ * past days keep the plan they were ticked against.
+ */
+export const PLAN_EPOCH = "2026-11-16T00:00:00.000Z";
+
+/**
+ * Ryan's cut day (confirmed 2026-11-16), exactly as the switcher builds it with
+ * its defaults: plain chicken with 92 g dry rice, 4 oz turkey with broccoli, two
+ * 35 kcal rice cakes. 1,964 kcal and 192 g protein against 1,900 / 180 every
+ * day, weekends and drinks included. Used until the switcher has been opened.
  */
 export const DEFAULT_PLAN: MealPlan = {
   v: 1,
-  at: "1970-01-01T00:00:00.000Z",
-  target: {
-    label: "Phase 1 weekday",
-    kcal: 2100,
-    protein: 160,
-    weekend: { label: "Phase 1 weekend", kcal: 2800, protein: 160 },
-  },
+  at: PLAN_EPOCH,
+  target: { label: "Cut", kcal: 1900, protein: 180 },
   items: [
     {
       id: "breakfast",
       label: "Oats breakfast",
       detail:
-        "Rolled oats, ¾ cup dry (61 g) · 2% milk, ¾ cup (183 g) · Ground flax, 1 tbsp (7 g) · Chia, 1 tbsp (12 g) · Whey isolate, 1 scoop",
-      kcal: 527,
-      protein: 42,
+        "Bob's Red Mill old fashioned oats, ¾ cup dry (60 g) · 2% milk, ¾ cup (183 g) · Chia seed, 1 tbsp (12 g) · Flaxseed meal, 1 tbsp (7 g) · ON Gold Standard whey, 1 scoop (31 g)",
+      kcal: 530,
+      protein: 41,
     },
-    { id: "musashi", label: "Musashi bar", detail: "Musashi bar", kcal: 320, protein: 46 },
-    { id: "uncrustable", label: "Uncrustable", detail: "Uncrustable PB & grape, 1 (57 g)", kcal: 210, protein: 6 },
+    { id: "musashi", label: "Musashi bar", detail: "Musashi High Protein bar, choc PB", kcal: 340, protein: 45 },
     {
       id: "ricecakes",
       label: "Rice cakes + PB",
-      detail: "Rice cakes, 2 (50 kcal each) · Natural peanut butter, 2 tbsp (32 g), weighed",
-      kcal: 291,
-      protein: 8,
+      detail: "Rice cakes, 2 (35 kcal each) · Natural peanut butter, 2 tbsp (32 g), weighed",
+      kcal: 261,
+      protein: 9,
     },
     {
       id: "turkey",
@@ -83,15 +84,21 @@ export const DEFAULT_PLAN: MealPlan = {
     {
       id: "dinner",
       label: "Chicken dinner",
-      detail: "Plain, 6 oz cooked (weighed) · Your white rice (weighed dry), 70 g dry",
-      kcal: 540,
-      protein: 59,
+      detail: "Plain, 6 oz cooked (weighed) · Your white rice (weighed dry), 92 g dry",
+      kcal: 621,
+      protein: 61,
     },
   ],
 };
 
-/** One-tap drinks and extras, with typical label calories. */
+/**
+ * One-tap evening snacks, drinks and extras, with typical label calories. On the
+ * cut they all count inside the 1,900; about 27 g less dry rice pays for 100 kcal.
+ */
 export const EXTRA_PRESETS: { label: string; kcal: number; protein: number }[] = [
+  { label: "Greek yogurt", kcal: 100, protein: 17 },
+  { label: "Cottage cheese", kcal: 90, protein: 12 },
+  { label: "Popcorn", kcal: 93, protein: 3 },
   { label: "Light beer", kcal: 100, protein: 1 },
   { label: "Regular beer", kcal: 150, protein: 1 },
   { label: "IPA", kcal: 250, protein: 2 },
@@ -181,7 +188,7 @@ export function planForDay(
   if (day < today) return own ?? DEFAULT_PLAN;
 
   const candidates = [local, ...saved.map((d) => d.plan)].filter(
-    (p): p is MealPlan => p !== null,
+    (p): p is MealPlan => p !== null && p.at >= PLAN_EPOCH,
   );
   candidates.sort((a, b) => b.at.localeCompare(a.at));
   const base = candidates[0] ?? DEFAULT_PLAN;
