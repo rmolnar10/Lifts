@@ -141,7 +141,8 @@ const INTENTIONAL_PROGRAM_CHANGES: Record<string, Record<string, string>> = {
       "Weighted Pull-Up → bodyweight Pull-Up, 4→3 sets at 5–10: always done at bodyweight but logged as 165 lb",
     crowH: "renamed Cable Row → Seated Cable Row; RPE 9–10 target added",
     shoulder: "RPE 8–9 target added",
-    latH: "3→4 sets at 8–15, RPE 9–10 target and a dropset on the last set; side delts 6 → 8 sets/week",
+    latH: "removed: high-rep DB lateral raises stalled at 15 lb for 11 weeks and the lifter dreaded them",
+    uprow: "added: Wide-Grip Cable Upright Row 3×6–10, heavier low-rep side-delt work in place of lateral raises",
     tri: "RPE 9–10, dropset, and supersetted (A1) with the curl, so rest drops to 0s",
     curl:
       "renamed Curl → Machine Curl, RPE 9–10, dropset, supersetted (A2) with the pushdown",
@@ -150,9 +151,10 @@ const INTENTIONAL_PROGRAM_CHANGES: Record<string, Record<string, string>> = {
     incline:
       "4×8–12 → 4×6–10, renamed Incline Smith Machine Bench Press; the 5th set was always the weakest and gated every load increase",
     fly: "added: Cable Fly 3×10–15, the only chest work at a long muscle length",
-    pull: "unit reps → lb with a 2.5 lb increment, so bodyweight pull-ups can progress to weighted",
+    pull: "Pull-Up → Lat Pulldown 3×6–10 (lifter swapped it in Nov 2026); Heavy Upper keeps bodyweight pull-ups",
     crowV: "renamed Seated Cable Row and 3→2 sets, funding the chest increase",
-    latV: "3→4 sets at 8–15, RPE 9–10 target and a dropset on the last set",
+    latV: "removed: replaced by a single-arm cable lateral raise",
+    cablelat: "added: Single-Arm Cable Lateral Raise 3×8–12 per side, no dropset; side delts 8 → 6 sets/week",
     hammer: "RPE 9–10, dropset, supersetted (A1) with the overhead extension",
     ohtri: "added: Overhead Triceps Extension 3×10–15, bringing triceps to 6 sets/week",
     pushup: "removed: optional and unprogressed, leaving direct triceps volume at 3 sets/week",
