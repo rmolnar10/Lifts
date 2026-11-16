@@ -49,9 +49,9 @@ export const PLAN_EPOCH = "2026-11-16T00:00:00.000Z";
 
 /**
  * Ryan's cut day (confirmed 2026-11-16), exactly as the switcher builds it with
- * its defaults: plain chicken with 92 g dry rice, 4 oz turkey with broccoli, two
- * 35 kcal rice cakes. 1,964 kcal and 192 g protein against 1,900 / 180 every
- * day, weekends and drinks included. Used until the switcher has been opened.
+ * its defaults: plain chicken with 75 g dry rice (trimmed from 92 g so the day
+ * lands on 1,900), 4 oz turkey with broccoli, two 35 kcal rice cakes. 1,900 kcal
+ * and 191 g protein against 1,900 / 180 every day, weekends and drinks included. Used until the switcher has been opened.
  */
 export const DEFAULT_PLAN: MealPlan = {
   v: 1,
@@ -84,9 +84,9 @@ export const DEFAULT_PLAN: MealPlan = {
     {
       id: "dinner",
       label: "Chicken dinner",
-      detail: "Plain, 6 oz cooked (weighed) · Your white rice (weighed dry), 92 g dry",
-      kcal: 621,
-      protein: 61,
+      detail: "Plain, 6 oz cooked (weighed) · Your white rice (weighed dry), 75 g dry",
+      kcal: 557,
+      protein: 59,
     },
   ],
 };

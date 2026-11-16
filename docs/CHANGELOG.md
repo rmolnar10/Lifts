@@ -1,5 +1,10 @@
 # Changelog
 
+## Cut day lands on 1,900 (2026-11-16)
+- Dinner rice now fills exactly what the 1,900 target leaves: 75 g dry on the
+  plain day (was 92 g, which put the day at 1,964). A saucier chicken or an
+  evening snack still comes out of the rice.
+
 ## 1,900 kcal cut (2026-11-16)
 - Meal switcher: one target, "Cut · 1,900 every day", weekends and drinks
   included (replaces the 2,100 weekday / 2,800 weekend split and the old 2,300
