@@ -1,5 +1,22 @@
 # Changelog
 
+## 1,900 kcal cut (2026-11-16)
+- Meal switcher: one target, "Cut · 1,900 every day", weekends and drinks
+  included (replaces the 2,100 weekday / 2,800 weekend split and the old 2,300
+  day). Protein target 180 g. Phase 2 (2,900) is unchanged.
+- Fixed foods are Ryan's confirmed day: Bob's Red Mill oats, 2% milk, chia,
+  flaxseed meal and ON Gold Standard whey on their labels; the whole Musashi
+  bar (340 kcal, 45 P); two 35 kcal rice cakes with 2 tbsp peanut butter. The
+  Uncrustable and olive oil are gone, and the olive oil no longer balances
+  fat: the dinner rice alone absorbs any change. On the cut the rice holds the
+  usual 92 g dry day, so a saucier chicken or a snack comes out of the rice.
+- New evening snack slot (Greek yogurt, cottage cheese, popcorn); picking one
+  shrinks dinner rice by about 27 g dry per 100 kcal.
+- Meals tab: 1,900 every day with what's left (or over) shown, one-tap
+  evening snacks next to the drinks. Plans saved before the cut are ignored
+  for today, so the stale day can't come back; past days keep theirs. No
+  migration.
+
 ## Weekday and weekend calorie targets (2026-10-29)
 - Meal switcher: Phase 1 is now 2,100 kcal Monday to Friday (fat 54 g, so no
   olive oil and about 70 g dry rice) with a 2,800 kcal ceiling on Saturday and

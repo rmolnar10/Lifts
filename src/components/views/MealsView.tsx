@@ -32,7 +32,7 @@ function Meter({
   value,
   target,
   unit,
-  ceiling = false,
+  ceiling = true,
 }: {
   label: string;
   value: number;
@@ -167,7 +167,7 @@ export default function MealsView({ setError }: { setError: (error: string | nul
       </ul>
 
       <div className="meal-extras">
-        <span className="small muted">{weekend ? "Drinks and extras" : "Extras"}</span>
+        <span className="small muted">Evening snack, drinks and extras</span>
         <div className="row" style={{ gap: 6, flexWrap: "wrap", justifyContent: "flex-start" }}>
           {EXTRA_PRESETS.map((x) => (
             <button key={x.label} className="small" onClick={() => void logExtra(x)}>
@@ -189,17 +189,15 @@ export default function MealsView({ setError }: { setError: (error: string | nul
       {/* Below the list but pinned to the bottom of the screen, so the totals
           stay in view while ticking meals off on a phone. */}
       <div className="meal-totals">
-        <Meter label={weekend ? "Calories (weekend ceiling)" : "Calories"} value={totals.kcal} target={target.kcal} unit="kcal" ceiling={weekend} />
-        <Meter label="Protein" value={totals.protein} target={target.protein} unit="g" />
+        <Meter label={weekend ? "Calories (weekend ceiling)" : "Calories"} value={totals.kcal} target={target.kcal} unit="kcal" />
+        <Meter label="Protein" value={totals.protein} target={target.protein} unit="g" ceiling={false} />
         <p className="small muted" style={{ margin: "6px 0 0" }}>
           {totals.done} of {plan.items.length} {plan.items.length === 1 ? "item" : "items"} done
-          {weekend
-            ? left >= 0
-              ? ` · ${left.toLocaleString()} kcal left before ${target.kcal.toLocaleString()}`
-              : ` · ${(-left).toLocaleString()} kcal over ${target.kcal.toLocaleString()}; eat the weekday day tomorrow`
-            : totals.done === plan.items.length
-              ? " · day complete"
-              : ""}
+          {left >= 0
+            ? ` · ${left.toLocaleString()} kcal left of ${target.kcal.toLocaleString()}`
+            : ` · ${(-left).toLocaleString()} kcal over ${target.kcal.toLocaleString()}${
+                checked.includes("dinner") ? "" : `; about ${Math.round(-left / 3.7)} g less dry rice at dinner covers it`
+              }`}
         </p>
       </div>
 
